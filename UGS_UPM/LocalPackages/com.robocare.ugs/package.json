@@ -1,10 +1,17 @@
-{
-  "name": "com.robocare.ugs",
-  "version": "1.0.0",
-  "displayName": "RoboCare UGS",
-  "description": "UGS login and in-app update runtime assets for RoboCare projects.",
-  "unity": "2021.3",
-  "author": {
-    "name": "RoboCare"
-  }
+﻿{
+    "name":  "com.robocare.ugs",
+    "version":  "v1.0.1",
+    "displayName":  "RoboCare UGS",
+    "description":  "UGS login and in-app update runtime assets for RoboCare projects.",
+    "unity":  "2021.3",
+    "author":  {
+                   "name":  "RoboCare"
+               },
+    "samples":  [
+                    {
+                        "path":  "Samples~/UGS Prefabs",
+                        "description":  "Import UGS prefabs into Assets/Samples for customization.",
+                        "displayName":  "UGS Prefabs"
+                    }
+                ]
 }

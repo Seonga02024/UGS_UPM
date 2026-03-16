@@ -76,3 +76,8 @@ Create GitHub Release (requires `gh auth login`):
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\tools\publish-ugs-upm.ps1 -Version 1.0.1 -CreateRelease
 ```
+
+## Samples Import
+
+`Window > Package Manager > Robocare UGS > Samples` tab에서
+`UGS Prefabs`를 `Import` 하면 `Assets/Samples/com.robocare.ugs/...`로 복사됩니다.
