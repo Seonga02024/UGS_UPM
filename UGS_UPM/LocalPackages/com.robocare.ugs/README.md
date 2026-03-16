@@ -44,3 +44,35 @@ Version bump + `.tgz` build:
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\tools\repackage-ugs.ps1 -Version 1.0.1 -Pack
 ```
+
+## Editor Button
+
+Open Unity menu:
+
+1. `Tools > UGS > Package Automation`
+2. Click `Sync Runtime`, `Pack TGZ`, or `Publish GitHub`
+
+The window executes:
+
+- `tools/repackage-ugs.ps1`
+- `tools/publish-ugs-upm.ps1`
+
+## GitHub Publish Script
+
+Full automation (sync + pack + commit + tag + push):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\publish-ugs-upm.ps1
+```
+
+Set version and release branch:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\publish-ugs-upm.ps1 -Version 1.0.1 -Branch main
+```
+
+Create GitHub Release (requires `gh auth login`):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\publish-ugs-upm.ps1 -Version 1.0.1 -CreateRelease
+```

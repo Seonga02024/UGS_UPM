@@ -6,8 +6,8 @@ using UnityEngine;
 
 public class LoginService : MonoBehaviour
 {
-    [SerializeField] private LoginSuccessPanel loginSuccessPanel;
-    [SerializeField] private LoginTokenReader loginTokenReader;
+    //[SerializeField] private LoginSuccessPanel loginSuccessPanel;
+    //[SerializeField] private LoginTokenReader loginTokenReader;
     public bool IsLoggedIn { get; private set; }
     public string PlayerId => AuthenticationService.Instance.PlayerId;
     public event Action LoginCompleted;
@@ -19,10 +19,10 @@ public class LoginService : MonoBehaviour
 
     private void Start()
     {
-        if (loginSuccessPanel != null)
-        {
-            loginSuccessPanel.FinishAppLogin += HandleLoginSuccessPanelFinished;
-        }
+        // if (loginSuccessPanel != null)
+        // {
+        //     loginSuccessPanel.FinishAppLogin += HandleLoginSuccessPanelFinished;
+        // }
     }
 
     private void HandleLoginSuccessPanelFinished()
@@ -68,7 +68,8 @@ public class LoginService : MonoBehaviour
 
     private bool ShouldUseCamiLogin()
     {
-        return loginTokenReader != null && loginTokenReader.currentPlatform == PlatformType.CAMI;
+        return false;
+        //return loginTokenReader != null && loginTokenReader.currentPlatform == PlatformType.CAMI;
     }
 
     private async Task EnsureServicesInitializedAsync()
