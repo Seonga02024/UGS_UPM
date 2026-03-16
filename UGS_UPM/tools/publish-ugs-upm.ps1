@@ -1,4 +1,4 @@
-param(
+﻿param(
     [string]$Source = "Assets/UGS",
     [string]$PackageRoot = "LocalPackages/com.robocare.ugs",
     [string]$Version,
@@ -26,10 +26,31 @@ function Invoke-Checked {
     }
 }
 
+function Normalize-Version {
+    param([string]$InputVersion)
+
+    if ([string]::IsNullOrWhiteSpace($InputVersion)) {
+        return $null
+    }
+
+    $v = $InputVersion.Trim()
+    if ($v.StartsWith("v")) {
+        $v = $v.Substring(1)
+    }
+
+    if (-not ($v -match '^[0-9]+\.[0-9]+\.[0-9]+([-.][0-9A-Za-z.-]+)?$')) {
+        throw "Invalid version format: $InputVersion. Use SemVer like 1.0.2"
+    }
+
+    return $v
+}
+
 $repoRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
 Set-Location $repoRoot
 
 Invoke-Checked -FilePath "git" -Arguments @("rev-parse", "--is-inside-work-tree")
+
+$normalizedVersion = Normalize-Version -InputVersion $Version
 
 $repackageScript = Join-Path $PSScriptRoot "repackage-ugs.ps1"
 if (-not (Test-Path -LiteralPath $repackageScript)) {
@@ -37,8 +58,8 @@ if (-not (Test-Path -LiteralPath $repackageScript)) {
 }
 
 $repackageArgs = @("-ExecutionPolicy", "Bypass", "-File", $repackageScript, "-Source", $Source, "-PackageRoot", $PackageRoot)
-if ($Version) {
-    $repackageArgs += @("-Version", $Version)
+if ($normalizedVersion) {
+    $repackageArgs += @("-Version", $normalizedVersion)
 }
 if (-not $NoPack) {
     $repackageArgs += "-Pack"
@@ -58,12 +79,16 @@ if ([string]::IsNullOrWhiteSpace($packageName) -or [string]::IsNullOrWhiteSpace(
     throw "package name/version missing in package.json"
 }
 
+if ($normalizedVersion -and ($packageVersion -ne $normalizedVersion)) {
+    throw "package.json version mismatch. expected=$normalizedVersion actual=$packageVersion"
+}
+
 $branchName = $Branch
 if ([string]::IsNullOrWhiteSpace($branchName)) {
     $branchName = (& git rev-parse --abbrev-ref HEAD).Trim()
 }
 
-$tagName = "$packageName/v$packageVersion"
+$tagName = "v$packageVersion"
 
 if (-not $NoCommit) {
     Invoke-Checked -FilePath "git" -Arguments @("add", $PackageRoot)

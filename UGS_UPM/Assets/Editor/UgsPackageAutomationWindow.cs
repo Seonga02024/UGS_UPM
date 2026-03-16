@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.IO;
 using UnityEditor;
@@ -24,7 +24,7 @@ public class UgsPackageAutomationWindow : EditorWindow
         GUILayout.Label("Package Paths", EditorStyles.boldLabel);
         sourcePath = EditorGUILayout.TextField("Source", sourcePath);
         packageRoot = EditorGUILayout.TextField("Package Root", packageRoot);
-        version = EditorGUILayout.TextField("Version (optional)", version);
+        version = EditorGUILayout.TextField("Version", version);
 
         GUILayout.Space(8f);
         GUILayout.Label("GitHub Publish", EditorStyles.boldLabel);
@@ -67,12 +67,13 @@ public class UgsPackageAutomationWindow : EditorWindow
 
     private void RunPublish()
     {
-        string scriptPath = GetScriptPath("tools/publish-ugs-upm.ps1");
-        string args = $"-ExecutionPolicy Bypass -File \"{scriptPath}\" -Source \"{sourcePath}\" -PackageRoot \"{packageRoot}\" -Remote \"{remote}\"";
-        if (!string.IsNullOrWhiteSpace(version))
+        if (string.IsNullOrWhiteSpace(version))
         {
-            args += $" -Version \"{version}\"";
+            throw new InvalidOperationException("Version is required for Publish GitHub. Example: 1.0.2");
         }
+
+        string scriptPath = GetScriptPath("tools/publish-ugs-upm.ps1");
+        string args = $"-ExecutionPolicy Bypass -File \"{scriptPath}\" -Source \"{sourcePath}\" -PackageRoot \"{packageRoot}\" -Remote \"{remote}\" -Version \"{version}\"";
         if (!string.IsNullOrWhiteSpace(branch))
         {
             args += $" -Branch \"{branch}\"";
