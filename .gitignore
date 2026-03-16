@@ -1,0 +1,30 @@
+﻿# Unity generated folders (nested project at UGS_UPM/)
+UGS_UPM/[Ll]ibrary/
+UGS_UPM/[Tt]emp/
+UGS_UPM/[Oo]bj/
+UGS_UPM/[Bb]uild/
+UGS_UPM/[Bb]uilds/
+UGS_UPM/[Ll]ogs/
+UGS_UPM/[Uu]ser[Ss]ettings/
+UGS_UPM/[Mm]emoryCaptures/
+UGS_UPM/[Rr]ecordings/
+
+# Unity generated files
+UGS_UPM/*.csproj
+UGS_UPM/*.sln
+UGS_UPM/*.slnx
+UGS_UPM/*.user
+UGS_UPM/*.pidb
+UGS_UPM/*.booproj
+UGS_UPM/*.svd
+UGS_UPM/*.pdb
+UGS_UPM/*.mdb
+UGS_UPM/*.opendb
+UGS_UPM/*.VC.db
+
+# Crash reports
+UGS_UPM/sysinfo.txt
+
+# OS/editor
+.DS_Store
+Thumbs.db
