@@ -58,9 +58,9 @@ public class InAppUpdateManager : MonoBehaviour
 
     private void HandleLoginCompleted()
     {
-        #if UNITY_ANDROID && !UNITY_EDITOR
+        //#if UNITY_ANDROID && !UNITY_EDITOR
             _ = RunPostLoginDataSyncAsync();
-        #endif
+        //#endif
     }
 
     private async Task RunPostLoginDataSyncAsync()
