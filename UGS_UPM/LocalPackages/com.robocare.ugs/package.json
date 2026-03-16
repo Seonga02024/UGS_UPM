@@ -1,8 +1,8 @@
 ﻿{
     "name":  "com.robocare.ugs",
-    "version":  "1.0.6",
+    "version":  "1.0.7",
     "displayName":  "RoboCare UGS",
-    "description":  "UGS login and in-app update runtime assets for RoboCare projects.",
+    "description":  "UGS assets distributed via Samples import.",
     "unity":  "2021.3",
     "author":  {
                    "name":  "RoboCare"
@@ -10,7 +10,7 @@
     "samples":  [
                     {
                         "path":  "Samples~/UGS",
-                        "description":  "Import prefab assets into Assets/Samples (scripts are provided by Runtime).",
+                        "description":  "Import full UGS folder (scripts + prefabs + resources) into Assets/Samples.",
                         "displayName":  "UGS"
                     }
                 ]

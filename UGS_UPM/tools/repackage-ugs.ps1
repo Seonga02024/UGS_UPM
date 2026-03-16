@@ -22,37 +22,24 @@ $repoRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
 $sourcePath = Join-Path $repoRoot $Source
 $packagePath = Join-Path $repoRoot $PackageRoot
 $runtimePath = Join-Path $packagePath "Runtime"
+$runtimeMetaPath = Join-Path $packagePath "Runtime.meta"
 $samplesRootPath = Join-Path $packagePath "Samples~"
 $samplePath = Join-Path $samplesRootPath "UGS"
 $packageJsonPath = Join-Path $packagePath "package.json"
 
-$sourceScriptPath = Join-Path $sourcePath "Common Script"
-$sourceScriptMetaPath = Join-Path $sourcePath "Common Script.meta"
-$sourcePrefabsPath = Join-Path $sourcePath "Common Prefabs"
-$sourcePrefabsMetaPath = Join-Path $sourcePath "Common Prefabs.meta"
-$sourceResourcesPath = Join-Path $sourcePath "Common Resources"
-$sourceResourcesMetaPath = Join-Path $sourcePath "Common Resources.meta"
-
 Assert-PathExists -Path $sourcePath -Label "UGS source folder"
-Assert-PathExists -Path $sourceScriptPath -Label "UGS Common Script folder"
-Assert-PathExists -Path $sourceScriptMetaPath -Label "UGS Common Script meta"
-Assert-PathExists -Path $sourcePrefabsPath -Label "UGS Common Prefabs folder"
-Assert-PathExists -Path $sourcePrefabsMetaPath -Label "UGS Common Prefabs meta"
 Assert-PathExists -Path $packagePath -Label "Package root folder"
 Assert-PathExists -Path $packageJsonPath -Label "package.json"
 
-# Runtime = scripts only
+# Runtime removed: package works via Samples import
 if (Test-Path -LiteralPath $runtimePath) {
-    Get-ChildItem -LiteralPath $runtimePath -Force | Remove-Item -Recurse -Force
+    Remove-Item -LiteralPath $runtimePath -Recurse -Force
 }
-else {
-    New-Item -ItemType Directory -Path $runtimePath | Out-Null
+if (Test-Path -LiteralPath $runtimeMetaPath) {
+    Remove-Item -LiteralPath $runtimeMetaPath -Force
 }
 
-Copy-Item -Path $sourceScriptPath -Destination $runtimePath -Recurse -Force
-Copy-Item -Path $sourceScriptMetaPath -Destination (Join-Path $runtimePath "Common Script.meta") -Force
-
-# Samples = prefab/resources only
+# Samples = full UGS folder (scripts + prefabs + resources)
 if (-not (Test-Path -LiteralPath $samplesRootPath)) {
     New-Item -ItemType Directory -Path $samplesRootPath | Out-Null
 }
@@ -61,28 +48,18 @@ if (Test-Path -LiteralPath $samplePath) {
 }
 New-Item -ItemType Directory -Path $samplePath | Out-Null
 
-Copy-Item -Path $sourcePrefabsPath -Destination $samplePath -Recurse -Force
-Copy-Item -Path $sourcePrefabsMetaPath -Destination (Join-Path $samplePath "Common Prefabs.meta") -Force
-
-if (Test-Path -LiteralPath $sourceResourcesPath) {
-    Copy-Item -Path $sourceResourcesPath -Destination $samplePath -Recurse -Force
-    if (Test-Path -LiteralPath $sourceResourcesMetaPath) {
-        Copy-Item -Path $sourceResourcesMetaPath -Destination (Join-Path $samplePath "Common Resources.meta") -Force
-    }
-}
+Copy-Item -Path (Join-Path $sourcePath "*") -Destination $samplePath -Recurse -Force
 
 $sampleReadmePath = Join-Path $samplePath "README.md"
 @"
-# UGS Sample
+# UGS Full Sample
 
-Import this sample to copy UGS prefab assets into your project sample area.
+Import this sample to copy full UGS content into your project sample area.
 
 Included:
+- `Common Script/*`
 - `Common Prefabs/*`
 - `Common Resources/*` (if present)
-
-Excluded:
-- Scripts (Runtime provides scripts to avoid duplicate compilation)
 "@ | Set-Content -Path $sampleReadmePath -Encoding UTF8
 
 if ($Version) {
