@@ -1,4 +1,4 @@
-# com.robocare.ugs
+ï»¿# com.robocare.ugs
 
 UGS login and in-app update runtime assets for RoboCare projects.
 
@@ -6,7 +6,7 @@ UGS login and in-app update runtime assets for RoboCare projects.
 
 - `Runtime/Common Script/LoginService.cs`
 - `Runtime/Common Script/InAppUpdateManager.cs`
-- `Runtime/Common Prefabs/InAppUpdateUI.prefab`
+- `Samples~/UGS Prefabs/Common Prefabs/InAppUpdateUI.prefab` (import sample)
 
 ## Requirements
 
@@ -79,5 +79,6 @@ powershell -ExecutionPolicy Bypass -File .\tools\publish-ugs-upm.ps1 -Version 1.
 
 ## Samples Import
 
-`Window > Package Manager > Robocare UGS > Samples` tab¿¡¼­
-`UGS Prefabs`¸¦ `Import` ÇÏ¸é `Assets/Samples/com.robocare.ugs/...`·Î º¹»çµË´Ï´Ù.
+`Window > Package Manager > Robocare UGS > Samples` tabì—ì„œ
+`UGS Prefabs`ë¥¼ `Import` í•˜ë©´ `Assets/Samples/com.robocare.ugs/... (scripts are not copied)`ë¡œ ë³µì‚¬ë©ë‹ˆë‹¤.
+
