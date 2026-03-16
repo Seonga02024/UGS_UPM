@@ -23,16 +23,21 @@ $sourcePath = Join-Path $repoRoot $Source
 $packagePath = Join-Path $repoRoot $PackageRoot
 $runtimePath = Join-Path $packagePath "Runtime"
 $samplesRootPath = Join-Path $packagePath "Samples~"
-$samplePrefabsPath = Join-Path $samplesRootPath "UGS"
+$samplePath = Join-Path $samplesRootPath "UGS"
 $packageJsonPath = Join-Path $packagePath "package.json"
 
 $sourceScriptPath = Join-Path $sourcePath "Common Script"
+$sourceScriptMetaPath = Join-Path $sourcePath "Common Script.meta"
 $sourcePrefabsPath = Join-Path $sourcePath "Common Prefabs"
+$sourcePrefabsMetaPath = Join-Path $sourcePath "Common Prefabs.meta"
 $sourceResourcesPath = Join-Path $sourcePath "Common Resources"
+$sourceResourcesMetaPath = Join-Path $sourcePath "Common Resources.meta"
 
 Assert-PathExists -Path $sourcePath -Label "UGS source folder"
 Assert-PathExists -Path $sourceScriptPath -Label "UGS Common Script folder"
+Assert-PathExists -Path $sourceScriptMetaPath -Label "UGS Common Script meta"
 Assert-PathExists -Path $sourcePrefabsPath -Label "UGS Common Prefabs folder"
+Assert-PathExists -Path $sourcePrefabsMetaPath -Label "UGS Common Prefabs meta"
 Assert-PathExists -Path $packagePath -Label "Package root folder"
 Assert-PathExists -Path $packageJsonPath -Label "package.json"
 
@@ -45,22 +50,28 @@ else {
 }
 
 Copy-Item -Path $sourceScriptPath -Destination $runtimePath -Recurse -Force
+Copy-Item -Path $sourceScriptMetaPath -Destination (Join-Path $runtimePath "Common Script.meta") -Force
 
-# Samples = prefabs/examples only (no scripts)
+# Samples = prefab/resources only
 if (-not (Test-Path -LiteralPath $samplesRootPath)) {
     New-Item -ItemType Directory -Path $samplesRootPath | Out-Null
 }
-if (Test-Path -LiteralPath $samplePrefabsPath) {
-    Remove-Item -LiteralPath $samplePrefabsPath -Recurse -Force
+if (Test-Path -LiteralPath $samplePath) {
+    Remove-Item -LiteralPath $samplePath -Recurse -Force
 }
-New-Item -ItemType Directory -Path $samplePrefabsPath | Out-Null
+New-Item -ItemType Directory -Path $samplePath | Out-Null
 
-Copy-Item -Path $sourcePrefabsPath -Destination $samplePrefabsPath -Recurse -Force
+Copy-Item -Path $sourcePrefabsPath -Destination $samplePath -Recurse -Force
+Copy-Item -Path $sourcePrefabsMetaPath -Destination (Join-Path $samplePath "Common Prefabs.meta") -Force
+
 if (Test-Path -LiteralPath $sourceResourcesPath) {
-    Copy-Item -Path $sourceResourcesPath -Destination $samplePrefabsPath -Recurse -Force
+    Copy-Item -Path $sourceResourcesPath -Destination $samplePath -Recurse -Force
+    if (Test-Path -LiteralPath $sourceResourcesMetaPath) {
+        Copy-Item -Path $sourceResourcesMetaPath -Destination (Join-Path $samplePath "Common Resources.meta") -Force
+    }
 }
 
-$sampleReadmePath = Join-Path $samplePrefabsPath "README.md"
+$sampleReadmePath = Join-Path $samplePath "README.md"
 @"
 # UGS Sample
 
@@ -103,4 +114,3 @@ if ($Pack) {
 Write-Host "UGS package sync complete."
 Write-Host "Source : $sourcePath"
 Write-Host "Package: $packagePath"
-
