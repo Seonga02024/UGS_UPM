@@ -1,6 +1,6 @@
 ﻿{
     "name":  "com.robocare.ugs",
-    "version":  "1.0.5",
+    "version":  "1.0.6",
     "displayName":  "RoboCare UGS",
     "description":  "UGS login and in-app update runtime assets for RoboCare projects.",
     "unity":  "2021.3",

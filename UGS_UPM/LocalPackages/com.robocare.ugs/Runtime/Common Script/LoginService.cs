@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Threading.Tasks;
 using Unity.Services.Authentication;
 using Unity.Services.Core;
@@ -92,7 +92,7 @@ public class LoginService : MonoBehaviour
         try
         {
             await AuthenticationService.Instance.SignUpWithUsernamePasswordAsync(_userId, _robotId);
-            Debug.Log($"[LoginService] Login success: 케미 로그인 - _userId : {_userId} / _robotId : {_robotId} / _userName : {_userName}");
+            Debug.Log($"[LoginService] Login success: _userId : {_userId} / _robotId : {_robotId} / _userName : {_userName}");
         }
         catch (AuthenticationException)
         {
@@ -103,6 +103,7 @@ public class LoginService : MonoBehaviour
     private static async Task LoginAnonymouslyAsync()
     {
         await AuthenticationService.Instance.SignInAnonymouslyAsync();
-        Debug.Log($"[LoginService] Login success: 익명 로그인");
+        Debug.Log("[LoginService] Login success: Anonymous login");
     }
 }
+
