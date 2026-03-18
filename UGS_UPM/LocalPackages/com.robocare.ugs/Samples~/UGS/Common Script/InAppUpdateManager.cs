@@ -9,7 +9,7 @@ using UnityEngine.UI;
 
 public class InAppUpdateManager : MonoBehaviour
 {
-    [SerializeField] private LoginService loginService;
+    [SerializeField] private LoginManager loginService;
 
     [Header("Remote Config Keys")]
     [SerializeField] private string minimumBundleCodeKey = "min_required_bundle_code_android";
@@ -35,6 +35,7 @@ public class InAppUpdateManager : MonoBehaviour
     [SerializeField] private Button updateButton;
     [SerializeField] private Button laterButton;
     private bool _canPassUpdate;
+    public event Action UpdateCompleted;
 
     private void Start()
     {
@@ -51,8 +52,9 @@ public class InAppUpdateManager : MonoBehaviour
                 if (updatePanel != null)
                 {
                     updatePanel.SetActive(false);
+                    UpdateCompleted?.Invoke();
                 }
-            });   
+            });
         }
     }
 
