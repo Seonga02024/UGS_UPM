@@ -19,10 +19,70 @@ function Invoke-Checked {
         [Parameter(Mandatory = $true)][string[]]$Arguments
     )
 
-    & $FilePath @Arguments
-    if ($LASTEXITCODE -ne 0) {
+    if ($FilePath -ne "git") {
+        & $FilePath @Arguments
+        if ($LASTEXITCODE -ne 0) {
+            $argText = $Arguments -join " "
+            throw "Command failed (exit=$LASTEXITCODE): $FilePath $argText"
+        }
+        return
+    }
+
+    $maxRetries = 5
+    for ($attempt = 1; $attempt -le $maxRetries; $attempt++) {
+        $quotedArgs = $Arguments | ForEach-Object {
+            if ($_ -match '\s') { '"' + ($_ -replace '"', '\"') + '"' } else { $_ }
+        }
+        $argLine = $quotedArgs -join " "
+
+        $stdoutFile = [System.IO.Path]::GetTempFileName()
+        $stderrFile = [System.IO.Path]::GetTempFileName()
+        try {
+            $proc = Start-Process -FilePath $FilePath -ArgumentList $argLine -NoNewWindow -Wait -PassThru -RedirectStandardOutput $stdoutFile -RedirectStandardError $stderrFile
+            $exitCode = $proc.ExitCode
+
+            $stdoutText = ""
+            $stderrText = ""
+            if (Test-Path -LiteralPath $stdoutFile) {
+                $stdoutText = [string](Get-Content -LiteralPath $stdoutFile -Raw)
+                if ($null -eq $stdoutText) { $stdoutText = "" } else { $stdoutText = $stdoutText.Trim() }
+            }
+            if (Test-Path -LiteralPath $stderrFile) {
+                $stderrText = [string](Get-Content -LiteralPath $stderrFile -Raw)
+                if ($null -eq $stderrText) { $stderrText = "" } else { $stderrText = $stderrText.Trim() }
+            }
+            $outputText = @($stdoutText, $stderrText) -join [Environment]::NewLine
+            $outputText = $outputText.Trim()
+        }
+        finally {
+            if (Test-Path -LiteralPath $stdoutFile) { Remove-Item -LiteralPath $stdoutFile -Force }
+            if (Test-Path -LiteralPath $stderrFile) { Remove-Item -LiteralPath $stderrFile -Force }
+        }
+
+        if (-not [string]::IsNullOrWhiteSpace($outputText)) {
+            Write-Host $outputText
+        }
+
+        if ($exitCode -eq 0) {
+            return
+        }
+
+        $isGitLockError = $FilePath -eq "git" -and (
+            $outputText -match "index\.lock" -or
+            $outputText -match "Permission denied"
+        )
+
+        if ($isGitLockError -and $attempt -lt $maxRetries) {
+            Start-Sleep -Seconds 2
+            continue
+        }
+
+        if ($isGitLockError) {
+            throw "Git index lock/permission error while running: git $($Arguments -join ' ').`nClose GitHub Desktop or other git processes, then retry. If needed, verify no stale lock file exists at .git/index.lock."
+        }
+
         $argText = $Arguments -join " "
-        throw "Command failed: $FilePath $argText"
+        throw "Command failed (exit=$exitCode): $FilePath $argText"
     }
 }
 

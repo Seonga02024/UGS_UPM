@@ -170,7 +170,13 @@ private static void RunPowerShell(string arguments)
 
         if (process.ExitCode != 0)
         {
-            throw new Exception($"PowerShell failed with exit code {process.ExitCode}");
+            string errPreview = string.IsNullOrWhiteSpace(stderr) ? "(no stderr)" : stderr.Trim();
+            if (errPreview.Length > 2000)
+            {
+                errPreview = errPreview.Substring(errPreview.Length - 2000);
+            }
+
+            throw new Exception($"PowerShell failed with exit code {process.ExitCode}\n{errPreview}");
         }
 
         AssetDatabase.Refresh();
