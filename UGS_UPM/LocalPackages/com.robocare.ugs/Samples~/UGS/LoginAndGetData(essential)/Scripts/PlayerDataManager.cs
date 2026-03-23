@@ -7,6 +7,9 @@ using Unity.Services.CloudCode;
 using Unity.Services.CloudSave;
 using UnityEngine;
 
+namespace RoboCare.UGS
+{
+    // 빈 오브젝트 만들어서 붙이기 
 public class PlayerDataManager : MonoBehaviour
 {
     public static PlayerDataManager Instance { get; private set; }
@@ -62,15 +65,15 @@ public class PlayerDataManager : MonoBehaviour
 
     private void OnApplicationQuit() => SaveProcess();
 
-    private void OnApplicationPause(bool pauseStatus)
-    {
-        if (pauseStatus) SaveProcess();
-    }
+    // private void OnApplicationPause(bool pauseStatus)
+    // {
+    //     if (pauseStatus) SaveProcess();
+    // }
 
-    private void OnApplicationFocus(bool hasFocus)
-    {
-        if (!hasFocus) SaveProcess();
-    }
+    // private void OnApplicationFocus(bool hasFocus)
+    // {
+    //     if (!hasFocus) SaveProcess();
+    // }
 
     /// <summary> 로그인 성공 후 데이터 로드 시퀀스 </summary>
     private async Task PostLoginSequence()
@@ -230,9 +233,10 @@ public class PlayerDataManager : MonoBehaviour
         PlayerPrefs.SetString("DateOfExit", CurrentPlayerData.DateOfExit);
         PlayerPrefs.SetInt("OpenLevel", CurrentPlayerData.OpenLevel);
         PlayerPrefs.SetInt("Rated", CurrentPlayerData.Rated);
+        PlayerPrefs.SetInt("GameCoin", CurrentPlayerData.GameCoin);
 
         // 복합 데이터(퀘스트, 리워드) JSON 저장
-        PlayerPrefs.SetString("UserQuestStatus", JsonConvert.SerializeObject(CurrentPlayerData.questStatus));
+            PlayerPrefs.SetString("UserQuestStatus", JsonConvert.SerializeObject(CurrentPlayerData.questStatus));
         PlayerPrefs.SetString("CompleteGameRewards", JsonConvert.SerializeObject(CurrentPlayerData.completeGameRewards));
 
         foreach (var item in CurrentPlayerData.Items)
@@ -256,10 +260,11 @@ public class PlayerDataManager : MonoBehaviour
         CurrentPlayerData.DateOfExit = PlayerPrefs.GetString("DateOfExit", "");
         CurrentPlayerData.OpenLevel = PlayerPrefs.GetInt("OpenLevel", 1);
         CurrentPlayerData.Rated = PlayerPrefs.GetInt("Rated", 0);
+        CurrentPlayerData.GameCoin = PlayerPrefs.GetInt("GameCoin", 0);
 
         // JSON 데이터 복원
-        if (PlayerPrefs.HasKey("UserQuestStatus"))
-            CurrentPlayerData.questStatus = JsonConvert.DeserializeObject<UserQuestStatus>(PlayerPrefs.GetString("UserQuestStatus"), jsonSettings);
+            if (PlayerPrefs.HasKey("UserQuestStatus"))
+                CurrentPlayerData.questStatus = JsonConvert.DeserializeObject<UserQuestStatus>(PlayerPrefs.GetString("UserQuestStatus"), jsonSettings);
 
         if (PlayerPrefs.HasKey("CompleteGameRewards"))
             CurrentPlayerData.completeGameRewards = JsonConvert.DeserializeObject<List<string>>(PlayerPrefs.GetString("CompleteGameRewards"), jsonSettings);
@@ -275,4 +280,5 @@ public class PlayerDataManager : MonoBehaviour
         Debug.Log("로컬 데이터를 메모리에 동기화 완료");
     }
     #endregion
+}
 }

@@ -77,8 +77,13 @@ if ($Version) {
 if ($Pack) {
     Push-Location $packagePath
     try {
+        $localNpmCache = Join-Path $repoRoot ".tmp/npm-cache-ugs"
+        if (-not (Test-Path -LiteralPath $localNpmCache)) {
+            New-Item -ItemType Directory -Path $localNpmCache | Out-Null
+        }
+
         Get-ChildItem -LiteralPath $packagePath -Filter "*.tgz" -File | Remove-Item -Force
-        npm pack
+        npm pack --cache "$localNpmCache"
         if ($LASTEXITCODE -ne 0) {
             throw "npm pack failed with exit code $LASTEXITCODE"
         }

@@ -8,7 +8,10 @@ using UnityEngine.Android;
 using UnityEngine.Android;
 #endif
 
-public class PermissionRequester : MonoBehaviour
+namespace RoboCare.UGS
+{
+    // 빈 오브젝트 만들어서 붙이기 
+public class PermissionRequester : MonoBehaviour 
 {
     const float QuitDelaySeconds = 0.75f;
 
@@ -136,4 +139,5 @@ public class PermissionRequester : MonoBehaviour
         yield return new WaitForSecondsRealtime(QuitDelaySeconds);
         Application.Quit();
     }
+}
 }

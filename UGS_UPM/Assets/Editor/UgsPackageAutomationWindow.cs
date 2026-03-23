@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
+using System.Text;
 using UnityEditor;
 using UnityEngine;
 
@@ -98,9 +99,10 @@ public class UgsPackageAutomationWindow : EditorWindow
         return fullPath;
     }
 
-    private static void RunPowerShell(string arguments)
+private static void RunPowerShell(string arguments)
     {
 #if UNITY_EDITOR_WIN
+        const int timeoutMs = 10 * 60 * 1000;
         string projectRoot = Directory.GetParent(Application.dataPath)?.FullName ?? throw new InvalidOperationException("Project root not found.");
         var psi = new ProcessStartInfo
         {
@@ -119,9 +121,43 @@ public class UgsPackageAutomationWindow : EditorWindow
             throw new InvalidOperationException("Failed to start powershell process.");
         }
 
-        string stdout = process.StandardOutput.ReadToEnd();
-        string stderr = process.StandardError.ReadToEnd();
+        var stdoutBuilder = new StringBuilder();
+        var stderrBuilder = new StringBuilder();
+        process.OutputDataReceived += (_, e) =>
+        {
+            if (!string.IsNullOrEmpty(e.Data))
+            {
+                stdoutBuilder.AppendLine(e.Data);
+            }
+        };
+        process.ErrorDataReceived += (_, e) =>
+        {
+            if (!string.IsNullOrEmpty(e.Data))
+            {
+                stderrBuilder.AppendLine(e.Data);
+            }
+        };
+
+        process.BeginOutputReadLine();
+        process.BeginErrorReadLine();
+
+        if (!process.WaitForExit(timeoutMs))
+        {
+            try
+            {
+                process.Kill();
+            }
+            catch
+            {
+                // Ignore kill failures.
+            }
+
+            throw new TimeoutException($"PowerShell timed out after {timeoutMs / 1000} seconds.");
+        }
+
         process.WaitForExit();
+        string stdout = stdoutBuilder.ToString();
+        string stderr = stderrBuilder.ToString();
 
         if (!string.IsNullOrWhiteSpace(stdout))
         {

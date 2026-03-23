@@ -2,6 +2,9 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
+namespace RoboCare.UGS
+{
+    // Canvas ChangePlayerNameUI Prefab 에 붙이기 
 public class ChangePlayerNameUI : MonoBehaviour
 {
     [SerializeField] private PlayerDataManager playerDataManager;
@@ -45,4 +48,5 @@ public class ChangePlayerNameUI : MonoBehaviour
         if (deletePlayerBtn) deletePlayerBtn.onClick.AddListener(async () => await PlayerDataManager.Instance.DeletePlayer());
         if (CloseBtn) CloseBtn.onClick.AddListener(() => playerSettingPanel.SetActive(false));
     }
+}
 }

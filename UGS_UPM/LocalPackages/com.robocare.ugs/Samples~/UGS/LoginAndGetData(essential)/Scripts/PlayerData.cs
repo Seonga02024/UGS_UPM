@@ -4,6 +4,9 @@ using System.Collections.Generic;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
+namespace RoboCare.UGS
+{
+
 [Serializable]
 public class PlayerData
 {
@@ -16,6 +19,7 @@ public class PlayerData
     public float RestLifeTimer = 0f;
     public string DateOfExit = "";
     public int Rated = 0;
+    public int GameCoin = 0;
     public List<Item> Items = new List<Item>();
     public UserQuestStatus questStatus = new UserQuestStatus();
     public List<string> completeGameRewards = new List<string>();
@@ -48,6 +52,8 @@ public enum ItemType
 {
     item1,
     item2
+}
+
 }
 
 #endregion
