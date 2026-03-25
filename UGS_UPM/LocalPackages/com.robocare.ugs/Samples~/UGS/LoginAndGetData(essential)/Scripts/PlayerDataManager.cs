@@ -217,35 +217,57 @@ public class PlayerDataManager : MonoBehaviour
     }
     #endregion
     
-
-    #region [PlayerPrefs (Local)] 게임 별 커스텀 필요 
-    /// <summary> 메모리 데이터를 PlayerPrefs로 복사 </summary>
-    public void SettingPlayerPrefs()
-    {
-        if (CurrentPlayerData == null) return;
-
-        PlayerPrefs.SetInt("Lifes", CurrentPlayerData.lifes);
-        PlayerPrefs.SetInt("Music", CurrentPlayerData.Music);
-        PlayerPrefs.SetInt("Sound", CurrentPlayerData.Sound);
-        PlayerPrefs.SetInt("Lauched", CurrentPlayerData.Lauched);
-        PlayerPrefs.SetInt("Gems", Gold);
-        PlayerPrefs.SetFloat("RestLifeTimer", CurrentPlayerData.RestLifeTimer);
-        PlayerPrefs.SetString("DateOfExit", CurrentPlayerData.DateOfExit);
-        PlayerPrefs.SetInt("OpenLevel", CurrentPlayerData.OpenLevel);
-        PlayerPrefs.SetInt("Rated", CurrentPlayerData.Rated);
-        PlayerPrefs.SetInt("GameCoin", CurrentPlayerData.GameCoin);
-
-        // 복합 데이터(퀘스트, 리워드) JSON 저장
-            PlayerPrefs.SetString("UserQuestStatus", JsonConvert.SerializeObject(CurrentPlayerData.questStatus));
-        PlayerPrefs.SetString("CompleteGameRewards", JsonConvert.SerializeObject(CurrentPlayerData.completeGameRewards));
-
-        foreach (var item in CurrentPlayerData.Items)
-        {
-            PlayerPrefs.SetInt(item.id.ToString(), item.count);
-        }
-
-        PlayerPrefs.Save();
+    #region 보안 Event
+    
+    // 퀘스트 완료 시, cloud code 를 통해 보상 지급 
+    public void SendCompleteQuest(string questId){
+        
     }
+    
+    // 퀘스트 완료 시, cloud code 를 통해 보상 지급 
+    public void SendCompleteReward(string rewardId){
+        
+    }
+
+    public void BuyItem(string itemId){
+        
+    }
+
+    // 퀘스트 완료 시, cloud code 를 통해 보상 지급 
+    public void SendDayReward(string rewardId){
+        
+    }
+    
+    #endregion
+
+        #region [PlayerPrefs (Local)] 게임 별 커스텀 필요 
+        /// <summary> 메모리 데이터를 PlayerPrefs로 복사 </summary>
+        public void SettingPlayerPrefs()
+        {
+            if (CurrentPlayerData == null) return;
+
+            PlayerPrefs.SetInt("Lifes", CurrentPlayerData.lifes);
+            PlayerPrefs.SetInt("Music", CurrentPlayerData.Music);
+            PlayerPrefs.SetInt("Sound", CurrentPlayerData.Sound);
+            PlayerPrefs.SetInt("Lauched", CurrentPlayerData.Lauched);
+            PlayerPrefs.SetInt("Gems", Gold);
+            PlayerPrefs.SetFloat("RestLifeTimer", CurrentPlayerData.RestLifeTimer);
+            PlayerPrefs.SetString("DateOfExit", CurrentPlayerData.DateOfExit);
+            PlayerPrefs.SetInt("OpenLevel", CurrentPlayerData.OpenLevel);
+            PlayerPrefs.SetInt("Rated", CurrentPlayerData.Rated);
+            PlayerPrefs.SetInt("GameCoin", CurrentPlayerData.GameCoin);
+
+            // 복합 데이터(퀘스트, 리워드) JSON 저장
+            PlayerPrefs.SetString("UserQuestStatus", JsonConvert.SerializeObject(CurrentPlayerData.questStatus));
+            PlayerPrefs.SetString("CompleteGameRewards", JsonConvert.SerializeObject(CurrentPlayerData.completeGameRewards));
+
+            foreach (var item in CurrentPlayerData.Items)
+            {
+                PlayerPrefs.SetInt(item.id.ToString(), item.count);
+            }
+
+            PlayerPrefs.Save();
+        }
 
     /// <summary> PlayerPrefs 데이터를 메모리로 로드 </summary>
     private void LoadFromPlayerPrefs()

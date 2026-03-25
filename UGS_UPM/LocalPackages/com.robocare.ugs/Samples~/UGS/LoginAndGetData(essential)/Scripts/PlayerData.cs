@@ -45,9 +45,6 @@ public class GoldResponse
 
 [Serializable] public class MapData { public string id; public int star; public int score; }
 [Serializable] public class Item { [JsonConverter(typeof(StringEnumConverter))] public ItemType id; public int count; }
-[Serializable] public class UserQuestStatus { public string lastAssignDate = ""; public List<QuestProgress> activeQuests = new List<QuestProgress>(); }
-[Serializable] public class QuestProgress { public string id = ""; public string desc = ""; public string type = ""; public int goal = 0; public int reward = 0; public int currentProgress = 0; public bool isCompleted = false; }
-
 public enum ItemType
 {
     item1,
