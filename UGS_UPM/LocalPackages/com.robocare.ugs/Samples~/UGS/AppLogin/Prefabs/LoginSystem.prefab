@@ -5656,19 +5656,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7dfbbeb93eb1f344ab16f38a53cd2fd4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: RoboCare.UGS::LoginTokenReader
-  loadingPanel: {fileID: 0}
-  loginSuccessPanel: {fileID: 0}
-  loginSuccessInfoText: {fileID: 0}
-  loginFailPanel: {fileID: 0}
-  loginFailInfoText: {fileID: 0}
-  goStoreBtn: {fileID: 0}
-  guestBtn: {fileID: 0}
-  camiBtn: {fileID: 0}
-  platformSelector: {fileID: 0}
-  tokenText: {fileID: 0}
-  secretBtn2: {fileID: 0}
-  tosPanel: {fileID: 0}
-  blocker: {fileID: 0}
+  loadingPanel: {fileID: 7743906168822662247}
+  loginSuccessPanel: {fileID: 8010687467609551730}
+  loginSuccessInfoText: {fileID: 8241765880084387773}
+  loginFailPanel: {fileID: 8241765880703140281}
+  loginFailInfoText: {fileID: 8241765880289576421}
+  goStoreBtn: {fileID: 1227230884375092067}
+  guestBtn: {fileID: 6203769699042200334}
+  camiBtn: {fileID: 5062831021180409215}
+  platformSelector: {fileID: 7657473260033080260}
+  tokenText: {fileID: 8241765880240090011}
+  secretBtn2: {fileID: 4244271166419812708}
+  tosPanel: {fileID: 2770488717273067753}
+  blocker: {fileID: 400461686456605741}
   color_bomi1: {r: 0.07, g: 0.81, b: 0.92, a: 1}
   color_cami: {r: 0.94, g: 0.54, b: 0.84, a: 1}
   color_others: {r: 0.72, g: 0.4, b: 0.78, a: 1}
@@ -6796,6 +6796,17 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 6273299844798518983, guid: fc8a9aa0171112747a2bca2f927baba2, type: 3}
   m_PrefabInstance: {fileID: 5373147593273495739}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &2770488717273067753 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7846257413325201490, guid: fc8a9aa0171112747a2bca2f927baba2, type: 3}
+  m_PrefabInstance: {fileID: 5373147593273495739}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 932b078c910fb4244a7af58aa5b1333d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: RoboCare.UGS::TermsGate
 --- !u!1001 &7603412933595966948
 PrefabInstance:
   m_ObjectHideFlags: 0

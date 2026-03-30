@@ -1,6 +1,6 @@
 ﻿{
     "name":  "com.robocare.ugs",
-    "version":  "1.1.6",
+    "version":  "1.1.7",
     "displayName":  "RoboCare UGS",
     "description":  "UGS assets distributed via Samples import.",
     "unity":  "2021.3",
