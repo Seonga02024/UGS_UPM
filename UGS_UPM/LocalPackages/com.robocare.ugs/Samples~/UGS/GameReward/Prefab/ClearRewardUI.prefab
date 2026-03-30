@@ -308,7 +308,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 61b21ccb541404845887c9f46e020177, type: 3}
   m_Name: 
   m_EditorClassIdentifier: RoboCare.UGS::GameRewardsManager
-  rewardsPanel: {fileID: 0}
+  rewardsPanel: {fileID: 6144661295365095495}
   questBtn: {fileID: 7901677543288666391}
   closeBtn: {fileID: 6932888485139638651}
 --- !u!1001 &1210137947859337266
@@ -441,6 +441,17 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 4118047222926833628, guid: 38d9b23d759f6fe408a39ee4cdeab883, type: 3}
   m_PrefabInstance: {fileID: 1210137947859337266}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &6144661295365095495 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 5011801500066005109, guid: 38d9b23d759f6fe408a39ee4cdeab883, type: 3}
+  m_PrefabInstance: {fileID: 1210137947859337266}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b12be727cc0772d4ea461f67561893bc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GameRewardsPanel
 --- !u!114 &6932888485139638651 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 8141900462220945737, guid: 38d9b23d759f6fe408a39ee4cdeab883, type: 3}

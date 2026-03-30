@@ -6,52 +6,64 @@ namespace RoboCare.UGS
 {
     public class DayRewardUIItem : MonoBehaviour
     {
-        #region [Fields - UI & References]
         [Header("UI References")]
         [SerializeField] private GameObject completedBlock;
         [SerializeField] private TextMeshProUGUI idText;
         [SerializeField] private TextMeshProUGUI rewardText;
         [SerializeField] private Button getRewardBtn;
-        private DayRewardData _data = null;
-        private bool isCompleted = false;
-        #endregion
 
-        #region [Initialization & Setting]
+        private DayRewardData _data;
+
         private void Start()
         {
-            getRewardBtn.onClick.AddListener(CheckReward);
-            completedBlock.SetActive(false);
+            if (getRewardBtn != null)
+            {
+                getRewardBtn.onClick.AddListener(CheckReward);
+            }
+
+            SetClaimState(false, false);
         }
 
         private void CheckReward()
         {
-            if (isCompleted) return;
-            isCompleted = true;
-            PlayerDataManager.Instance.SendDayReward(_data.id);
-            completedBlock.SetActive(true);
-        }
-        #endregion
+            if (_data == null)
+            {
+                return;
+            }
 
-        #region [Public Method]
+            if (getRewardBtn == null || !getRewardBtn.interactable)
+            {
+                return;
+            }
+
+            AttendancCheckManager.Instance?.TryClaimAttendance(_data.id);
+        }
+
         public void SetReward(DayRewardData rewardData)
         {
             _data = rewardData;
-            idText.text = _data.id.ToString();
-            rewardText.text = _data.reward.ToString();
+            if (idText != null)
+            {
+                idText.text = _data.id;
+            }
 
-            // 특정 조건에 따른 아이템 이미 습득 했는지 아닌지 표시해주는 곳 
-            // if (PlayerDataManager.Instance.CurrentPlayerData)
-            // {
-            //     completedBlock.SetActive(true);
-            //     isCompleted = true;
-            // }
-            // else
-            // {
-            //     completedBlock.SetActive(false);
-            //     isCompleted = false;
-            //     getRewardBtn.enabled = false;
-            // }
+            if (rewardText != null)
+            {
+                rewardText.text = _data.reward.ToString();
+            }
         }
-        #endregion
+
+        public void SetClaimState(bool isCompleted, bool canClaim)
+        {
+            if (completedBlock != null)
+            {
+                completedBlock.SetActive(isCompleted);
+            }
+
+            if (getRewardBtn != null)
+            {
+                getRewardBtn.interactable = canClaim;
+            }
+        }
     }
 }

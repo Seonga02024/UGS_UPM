@@ -20,7 +20,6 @@ public class StoreManager : MonoBehaviour
     [SerializeField] private StorePanel storePanel;
     [SerializeField] private Button storeBtn;
     [SerializeField] private Button closeBtn;
-    [SerializeField] private Button saveBtn;
     #endregion
 
     private Dictionary<string, int> inventory = new Dictionary<string, int>();
@@ -57,7 +56,6 @@ public class StoreManager : MonoBehaviour
         // 5. 버튼 이벤트 바인딩
         storeBtn.onClick.AddListener(() => OpenPanel(true));
         closeBtn.onClick.AddListener(() => OpenPanel(false));
-        saveBtn.onClick.AddListener(() => SyncLocalToCloud());
     }
     
     private void OnApplicationFocus(bool focus)

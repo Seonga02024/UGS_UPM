@@ -1,26 +1,44 @@
 using System.Collections.Generic;
-using TMPro;
 using UnityEngine;
 
 namespace RoboCare.UGS
 {
     public class AttendancCheckPanel : MonoBehaviour
     {
-        #region [Fields - UI & References]
         [Header("UI Components")]
         [SerializeField] private List<DayRewardUIItem> _instantiatedDayRewardItems;
-        #endregion
 
-        /// <summary>
-        /// AttendancCheckManager 에서 받은 데이터를 적용하여 UI 로 표시 
-        /// </summary>
         public void UpdateRewardLog(DayRewardDefinitions dayRewardDatas)
         {
-            int number = 0;
-            // 활성화된 모든 퀘스트에 대해 UI 아이템을 생성합니다.
-            foreach (DayRewardData dayReward in dayRewardDatas.day_rewards)
+            if (dayRewardDatas?.day_rewards == null || _instantiatedDayRewardItems == null)
             {
-                _instantiatedDayRewardItems[number].SetReward(dayReward);
+                return;
+            }
+
+            int count = Mathf.Min(dayRewardDatas.day_rewards.Count, _instantiatedDayRewardItems.Count);
+            for (int i = 0; i < count; ++i)
+            {
+                _instantiatedDayRewardItems[i].SetReward(dayRewardDatas.day_rewards[i]);
+                _instantiatedDayRewardItems[i].SetClaimState(false, false);
+            }
+        }
+
+        public void ApplyClaimState(int claimCount, bool hasClaimedToday)
+        {
+            if (_instantiatedDayRewardItems == null)
+            {
+                return;
+            }
+
+            int nextIndex = claimCount + 1;
+
+            for (int i = 0; i < _instantiatedDayRewardItems.Count; ++i)
+            {
+                int dayNumber = i + 1;
+                bool isCompleted = dayNumber <= claimCount;
+                bool canClaimNow = dayNumber == nextIndex && !hasClaimedToday;
+
+                _instantiatedDayRewardItems[i].SetClaimState(isCompleted, canClaimNow);
             }
         }
     }

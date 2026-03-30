@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Unity.Services.Authentication;
+using Unity.Services.CloudCode;
+using Unity.Services.CloudSave;
 using Unity.Services.Core;
 using Unity.Services.RemoteConfig;
 using UnityEngine;
@@ -14,15 +16,23 @@ namespace RoboCare.UGS
     {
         public static AttendancCheckManager Instance { get; private set; }
 
-        #region [Fields - UI Components]
+        private const string AttendanceRewardsKey = "ATTENDANCE_REWARDS";
+        private const string AttendanceStateKey = "ATTENDANCE_STATE";
+        private const int KstOffsetHours = 9;
+
         [Header("UI Components")]
         [SerializeField] private AttendancCheckPanel attendancCheckPanel;
-        [SerializeField] private Button attendancCheckBtn; // 보상 창 열기 버튼
-        [SerializeField] private Button closeBtn; // 보상 창 닫기 버튼
-        private bool tryInit = false;
-        #endregion
+        [SerializeField] private Button attendancCheckBtn;
+        [SerializeField] private Button closeBtn;
 
-        #region [Unity Lifecycle]
+        private bool tryInit;
+        private bool isClaiming;
+        private DayRewardDefinitions cachedDefinitions;
+        private int currentClaimCount;
+        private bool hasClaimedToday;
+        public event Action<ClaimAttendanceRewardResponse> OnClaimAttendanceRewardCompleted;
+        private const string ClaimAttendanceRewardEndpoint = "ClaimAttendanceReward";
+
         private void Awake()
         {
             if (Instance == null)
@@ -34,33 +44,46 @@ namespace RoboCare.UGS
             {
                 Destroy(gameObject);
             }
+
             tryInit = false;
+            isClaiming = false;
+            currentClaimCount = 0;
+            hasClaimedToday = false;
         }
 
         private void Start()
         {
-            // 버튼 이벤트 바인딩
-            attendancCheckBtn.onClick.AddListener(() =>
+            if (attendancCheckBtn != null)
             {
-                if (tryInit == false) InitializeSequence();
-                OpenPanel(true);
-            });
-            closeBtn.onClick.AddListener(() => OpenPanel(false));
+                attendancCheckBtn.onClick.AddListener(() =>
+                {
+                    if (!tryInit)
+                    {
+                        InitializeSequence();
+                    }
+                    else
+                    {
+                        _ = RefreshAttendanceStateUiAsync();
+                    }
 
-            // 초기 상태는 패널 닫기
+                    OpenPanel(true);
+                });
+            }
+
+            if (closeBtn != null)
+            {
+                closeBtn.onClick.AddListener(() => OpenPanel(false));
+            }
+
             OpenPanel(false);
         }
-        #endregion
 
-        #region [Initialization]
-        /// <summary>
-        /// 서비스 초기화 및 데이터 로드 시퀀스
-        /// </summary>
         private async void InitializeSequence()
         {
             tryInit = true;
             await InitializeRemoteConfig();
             LoadRewardsDefinitions();
+            await RefreshAttendanceStateUiAsync();
         }
 
         private async Task InitializeRemoteConfig()
@@ -77,45 +100,169 @@ namespace RoboCare.UGS
                     await AuthenticationService.Instance.SignInAnonymouslyAsync();
                 }
 
-                // Remote Config 데이터 패치
-                await RemoteConfigService.Instance.FetchConfigsAsync(new userAttributes(), new appAttributes());
-                Debug.Log("[Rewards] Remote Config Fetch Completed");
+                await RemoteConfigService.Instance.FetchConfigsAsync(new UserAttributes(), new AppAttributes());
             }
             catch (Exception e)
             {
-                Debug.LogError($"[Rewards] Remote Config Initialization Failed: {e.Message}");
+                Debug.LogError($"[Attendance] Remote Config init failed: {e.Message}");
             }
         }
-        #endregion
 
-        #region [Reward Settings]
-        /// <summary>
-        /// Remote Config에서 보상 정의 정보를 가져와 패널에 할당
-        /// </summary>
         private void LoadRewardsDefinitions()
         {
-            string json = RemoteConfigService.Instance.appConfig.GetJson("ATTENDANCE_REWARDS");
-
+            string json = RemoteConfigService.Instance.appConfig.GetJson(AttendanceRewardsKey);
             if (string.IsNullOrEmpty(json))
             {
-                Debug.LogError("[Rewards] 'GAME_REWARDS' definition not found in Remote Config");
+                Debug.LogError("[Attendance] ATTENDANCE_REWARDS not found in Remote Config.");
                 return;
             }
 
-            var definitions = JsonConvert.DeserializeObject<DayRewardDefinitions>(json);
-
-            if (definitions?.day_rewards == null || definitions.day_rewards.Count == 0)
+            cachedDefinitions = JsonConvert.DeserializeObject<DayRewardDefinitions>(json);
+            if (cachedDefinitions?.day_rewards == null || cachedDefinitions.day_rewards.Count == 0)
             {
-                Debug.LogError("[Rewards] Failed to parse rewards or list is empty");
+                Debug.LogError("[Attendance] Parsed rewards are empty.");
                 return;
             }
 
-            Debug.Log($"[Rewards] Loaded {definitions.day_rewards.Count} reward stages from server.");
-            attendancCheckPanel.UpdateRewardLog(definitions);
+            attendancCheckPanel?.UpdateRewardLog(cachedDefinitions);
         }
-        #endregion
 
-        #region [UI Control]
+        public void TryClaimAttendance(string rewardId)
+        {
+            if (isClaiming)
+            {
+                return;
+            }
+
+            int expectedDay = currentClaimCount + 1;
+            if (!string.Equals(rewardId, expectedDay.ToString(), StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            if (hasClaimedToday)
+            {
+                return;
+            }
+
+            isClaiming = true;
+            // 서버로 출석체크 검증하는 코드 
+            var req = new ClaimAttendanceRewardRequest();
+            ClaimAttendanceReward(req, res =>
+            {
+                Debug.Log(
+                    $"[Callback] success={res.success}, currentMoney={res.currentMoney}, rewardDay={res.rewardDay}, reward={res.reward}, claimCount={res.claimCount}, monthKey={res.monthKey}, error={res.errorCode}");
+            });
+        }
+
+        private async void HandleClaimAttendanceCompleted(ClaimAttendanceRewardResponse res)
+        {
+            isClaiming = false;
+
+            if (res == null)
+            {
+                return;
+            }
+
+            if (res.success)
+            {
+                currentClaimCount = Mathf.Max(0, res.claimCount);
+                hasClaimedToday = true;
+                attendancCheckPanel?.ApplyClaimState(currentClaimCount, hasClaimedToday);
+                return;
+            }
+
+            if (res.errorCode == "ALREADY_CLAIMED_TODAY")
+            {
+                hasClaimedToday = true;
+                attendancCheckPanel?.ApplyClaimState(currentClaimCount, hasClaimedToday);
+                return;
+            }
+
+            await RefreshAttendanceStateUiAsync();
+        }
+
+        private async Task RefreshAttendanceStateUiAsync()
+        {
+            try
+            {
+                AttendanceStateData state = await LoadAttendanceStateAsync();
+                string currentMonthKey = GetCurrentMonthKeyKst();
+
+                if (!string.Equals(state.monthKey, currentMonthKey, StringComparison.Ordinal))
+                {
+                    state.claimCount = 0;
+                    state.lastClaimAt = string.Empty;
+                }
+
+                currentClaimCount = Mathf.Max(0, state.claimCount);
+                hasClaimedToday = IsClaimedTodayKst(state.lastClaimAt);
+
+                attendancCheckPanel?.ApplyClaimState(currentClaimCount, hasClaimedToday);
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[Attendance] Refresh state failed: {e.Message}");
+            }
+        }
+
+        private static string GetCurrentMonthKeyKst()
+        {
+            DateTime utcNow = DateTime.UtcNow;
+            DateTime kstNow = utcNow.AddHours(KstOffsetHours);
+            return $"{kstNow:yyyy-MM}";
+        }
+
+        private static string GetDateKeyKst(DateTime utcTime)
+        {
+            DateTime kst = utcTime.AddHours(KstOffsetHours);
+            return $"{kst:yyyy-MM-dd}";
+        }
+
+        private static bool IsClaimedTodayKst(string lastClaimAtIso)
+        {
+            if (string.IsNullOrWhiteSpace(lastClaimAtIso))
+            {
+                return false;
+            }
+
+            if (!DateTime.TryParse(lastClaimAtIso, out DateTime lastClaimUtc))
+            {
+                return false;
+            }
+
+            string todayKey = GetDateKeyKst(DateTime.UtcNow);
+            string lastKey = GetDateKeyKst(lastClaimUtc.ToUniversalTime());
+            return string.Equals(todayKey, lastKey, StringComparison.Ordinal);
+        }
+
+        private async Task<AttendanceStateData> LoadAttendanceStateAsync()
+        {
+            var keys = new HashSet<string> { AttendanceStateKey };
+            var data = await CloudSaveService.Instance.Data.Player.LoadAsync(keys);
+
+            if (!data.TryGetValue(AttendanceStateKey, out var item))
+            {
+                return new AttendanceStateData();
+            }
+
+            string json = item.Value.GetAsString();
+            if (string.IsNullOrWhiteSpace(json))
+            {
+                return new AttendanceStateData();
+            }
+
+            try
+            {
+                AttendanceStateData parsed = JsonConvert.DeserializeObject<AttendanceStateData>(json);
+                return parsed ?? new AttendanceStateData();
+            }
+            catch
+            {
+                return new AttendanceStateData();
+            }
+        }
+
         private void OpenPanel(bool isActive)
         {
             if (attendancCheckPanel != null)
@@ -123,10 +270,97 @@ namespace RoboCare.UGS
                 attendancCheckPanel.gameObject.SetActive(isActive);
             }
         }
+
+        private struct UserAttributes { }
+        private struct AppAttributes { }
+
+        [Serializable]
+        private class AttendanceStateData
+        {
+            public string monthKey;
+            public string lastClaimAt;
+            public int claimCount;
+        }
+
+        #region cloud code
+
+        // 서버로 출석체크 검증하는 코드 
+        public async void ClaimAttendanceReward(
+            ClaimAttendanceRewardRequest request = null,
+            Action<ClaimAttendanceRewardResponse> callback = null)
+        {
+            ClaimAttendanceRewardResponse response = await ClaimAttendanceRewardAsync(request);
+            callback?.Invoke(response);
+        }
+
+        private void NotifyClaimAttendanceRewardResult(ClaimAttendanceRewardResponse response)
+        {
+            OnClaimAttendanceRewardCompleted?.Invoke(response);
+        }
+
+        public async Task<ClaimAttendanceRewardResponse> ClaimAttendanceRewardAsync(
+        ClaimAttendanceRewardRequest request)
+        {
+            if (request == null)
+            {
+                request = new ClaimAttendanceRewardRequest();
+            }
+
+            if (!IsValidRequest(request))
+            {
+                var invalidResponse = BuildAttendanceErrorResponse("INVALID_PARAMS");
+                NotifyClaimAttendanceRewardResult(invalidResponse);
+                return invalidResponse;
+            }
+
+            var parameters = new Dictionary<string, object>();
+
+            try
+            {
+                ClaimAttendanceRewardResponse response =
+                    await CloudCodeService.Instance.CallEndpointAsync<ClaimAttendanceRewardResponse>(
+                        ClaimAttendanceRewardEndpoint,
+                        parameters);
+
+                if (response == null)
+                {
+                    response = BuildAttendanceErrorResponse("EMPTY_RESPONSE");
+                }
+
+                NotifyClaimAttendanceRewardResult(response);
+                return response;
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[ServerEventManager] ClaimAttendanceReward failed: {e.Message}");
+                var errorResponse = BuildAttendanceErrorResponse("CLOUD_CODE_ERROR");
+                NotifyClaimAttendanceRewardResult(errorResponse);
+                return errorResponse;
+            }
+        }
+
+        private static bool IsValidRequest(ClaimAttendanceRewardRequest request)
+        {
+            return request != null;
+        }
+
+        private static ClaimAttendanceRewardResponse BuildAttendanceErrorResponse(string errorCode)
+        {
+            return new ClaimAttendanceRewardResponse
+            {
+                success = false,
+                errorCode = errorCode,
+                currentMoney = 0,
+                rewardDay = string.Empty,
+                reward = 0,
+                claimCount = 0,
+                monthKey = string.Empty
+            };
+        }
+
         #endregion
     }
-    
-    #region [Data Models]
+
     [Serializable]
     public class DayRewardDefinitions
     {
@@ -134,11 +368,26 @@ namespace RoboCare.UGS
     }
 
     [Serializable]
-    public class DayRewardData 
+    public class DayRewardData
     {
-        public string id;     // 보상 고유 ID 
-        public int reward;    // 지급할 코인/아이템 양
+        public string id;
+        public int reward;
     }
 
-    #endregion
+    [Serializable]
+    public class ClaimAttendanceRewardResponse
+    {
+        public bool success;
+        public string errorCode;
+        public long currentMoney;
+        public string rewardDay;
+        public int reward;
+        public int claimCount;
+        public string monthKey;
+    }
+
+    [Serializable]
+    public class ClaimAttendanceRewardRequest
+    {
+    }
 }

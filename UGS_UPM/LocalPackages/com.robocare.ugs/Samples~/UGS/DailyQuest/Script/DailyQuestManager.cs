@@ -46,16 +46,13 @@ public class DailyQuestManager : MonoBehaviour
         }
     }
 
-    private async void Start()
+    private void Start()
     {
-        // 1. 로컬 데이터 먼저 로드
-        LoadLocalData();
-        
-        // 2. 서비스 초기화 및 퀘스트 할당 (비동기)
-        await CheckAndAssignQuests();
-
         // 3. 버튼 이벤트 바인딩
-        questBtn.onClick.AddListener(() => OpenPanel(true));
+        questBtn.onClick.AddListener(() =>
+        {
+            OpenPanel(true);
+        });
         closeBtn.onClick.AddListener(() => OpenPanel(false));
     }
     #endregion
@@ -245,8 +242,15 @@ public class DailyQuestManager : MonoBehaviour
     #endregion
 
     #region [UI Control]
-    private void OpenPanel(bool isActive)
+    private async void OpenPanel(bool isActive)
     {
+        if(isActive){
+            // 1. 로컬 데이터 먼저 로드
+            LoadLocalData();
+            // 2. 서비스 초기화 및 퀘스트 할당 (비동기)
+            await CheckAndAssignQuests();
+        }
+
         if (questPanel != null)
         {
             questPanel.gameObject.SetActive(isActive);

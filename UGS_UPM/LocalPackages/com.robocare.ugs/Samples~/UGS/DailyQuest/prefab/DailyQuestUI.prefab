@@ -171,7 +171,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c2413c48df38c384d9444a013f6449f4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: RoboCare.UGS::DailyQuestManager
-  questPanel: {fileID: 0}
+  questPanel: {fileID: 8062041674426916261}
   questBtn: {fileID: 6067895494845710009}
   closeBtn: {fileID: 3793243052546702321}
   currentStatus:
@@ -439,3 +439,14 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 7121922454837697665, guid: c6450eb0600a6f443918d3b3427b7443, type: 3}
   m_PrefabInstance: {fileID: 526434714230290396}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &8062041674426916261 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7542515236956138105, guid: c6450eb0600a6f443918d3b3427b7443, type: 3}
+  m_PrefabInstance: {fileID: 526434714230290396}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6bc260b6ad02b344b8565818a82682a9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::QuestPanel

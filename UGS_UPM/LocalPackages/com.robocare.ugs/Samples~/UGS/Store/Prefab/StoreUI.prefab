@@ -9,6 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4424916094237198571}
+  - component: {fileID: 1573607489773203212}
   m_Layer: 5
   m_Name: StoreUI
   m_TagString: Untagged
@@ -37,6 +38,22 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &1573607489773203212
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 37931052169001247}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7abb08cd13d09f64f9162f683a40f087, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: RoboCare.UGS::RoboCare.UGS.StoreManager
+  storePanel: {fileID: 4437869194092411753}
+  storeBtn: {fileID: 6141263661560718928}
+  closeBtn: {fileID: 2058706051138264373}
+  saveBtn: {fileID: 0}
 --- !u!1 &7154581792230348492
 GameObject:
   m_ObjectHideFlags: 0
@@ -425,3 +442,25 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 4639868544340210139, guid: 9a7b57c732738e34c9702e05ec1748e5, type: 3}
   m_PrefabInstance: {fileID: 5693740211175918425}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &2058706051138264373 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 6022936340385273452, guid: 9a7b57c732738e34c9702e05ec1748e5, type: 3}
+  m_PrefabInstance: {fileID: 5693740211175918425}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &4437869194092411753 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 8255731481905295408, guid: 9a7b57c732738e34c9702e05ec1748e5, type: 3}
+  m_PrefabInstance: {fileID: 5693740211175918425}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 94608fa7e082f4441840602b4a8f264b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::StorePanel
