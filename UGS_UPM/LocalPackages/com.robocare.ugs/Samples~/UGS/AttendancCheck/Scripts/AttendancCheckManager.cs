@@ -168,6 +168,7 @@ namespace RoboCare.UGS
             var req = new ClaimAttendanceRewardRequest();
             ClaimAttendanceReward(req, res =>
             {
+                HandleClaimAttendanceCompleted(res);
                 LogApi.Log(
                     $"[Callback] success={res.success}, currentMoney={res.currentMoney}, rewardDay={res.rewardDay}, reward={res.reward}, claimCount={res.claimCount}, monthKey={res.monthKey}, error={res.errorCode}");
             });

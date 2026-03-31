@@ -118,6 +118,18 @@ public class PlayerDataManager : MonoBehaviour
             SettingPlayerPrefs(); // 로컬 캐시 갱신
             isLoadPlayerData = true;
             GetDataCompleted?.Invoke(); // 데이터 로드 완료 
+
+            // 개인 재화 업데이트 
+            var tcs = new TaskCompletionSource<bool>();
+            var req = new GetOrInitPlayerMoneyRequest { PLAYER_ID = AuthenticationService.Instance.PlayerId };
+            ServerEventManager.Instance.GetOrInitPlayerMoney(req, res =>
+            {
+                tcs.TrySetResult(res.success);
+                if (res.success)
+                {
+                    LogApi.Log($"[PlayerDataManager][GetOrInitPlayerMoneyRequest Callback] success={res.success}, money={res.money}, updated={res.updated}");
+                }
+            });
         }
         catch (Exception e)
         {

@@ -2,13 +2,35 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Unity.Services.CloudCode;
+using UnityEditor;
 using UnityEngine;
 
 namespace RoboCare.UGS
 {
     public class ServerEventManager : MonoBehaviour
     {
+        public static ServerEventManager Instance { get; private set; }
+        
+        private void Start()
+        {
+            if (Instance == null)
+            {
+                Instance = this;
+                DontDestroyOnLoad(gameObject);
+            }
+            else
+            {
+                Destroy(gameObject);
+            }
+        }
+
         #region GetOrInitPlayerMoneyEndpoint 재화 정보 획득
+
+        /*
+        * 사용 방법:
+        * 1) Remote congif free_money (long) / min_money (long) 
+        */
+
         private const string GetOrInitPlayerMoneyEndpoint = "GetOrInitPlayerMoney";
         public event Action<GetOrInitPlayerMoneyResponse> OnGetOrInitPlayerMoneyCompleted;
 
@@ -21,6 +43,8 @@ namespace RoboCare.UGS
         }
 
         /*
+        var tcs = new TaskCompletionSource<bool>();
+        var req = new GetOrInitPlayerMoneyRequest { PLAYER_ID = AuthenticationService.Instance.PlayerId };
         ServerEventManager.Instance.GetOrInitPlayerMoney(req, res =>
         {
             tcs.TrySetResult(res.success);
