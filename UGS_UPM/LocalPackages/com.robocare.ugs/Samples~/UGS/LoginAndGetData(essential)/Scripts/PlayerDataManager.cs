@@ -9,6 +9,12 @@ using UnityEngine;
 
 namespace RoboCare.UGS
 {
+    /*
+     * 사용 방법:
+     * 1) Cloud Save 키 player_data를 사용해 플레이어 데이터를 저장/로드합니다.
+     * 2) LoginManager.LoginCompleted 이벤트 수신 시 PostLoginSequence(코인 동기화 + 데이터 로드)를 시작합니다.
+     * 3) 종료/백그라운드 전환 시 SaveProcess로 로컬 데이터를 Cloud Save에 반영합니다.
+     */
     // 빈 오브젝트 만들어서 붙이기 
 public class PlayerDataManager : MonoBehaviour
 {
@@ -103,7 +109,7 @@ public class PlayerDataManager : MonoBehaviour
             }
             else
             {
-                Debug.Log("서버 데이터가 없습니다. 초기 데이터 생성.");
+                LogApi.Log("서버 데이터가 없습니다. 초기 데이터 생성.");
                 CurrentPlayerData = new PlayerData();
                 CurrentPlayerData.InitPlayerData();
                 await SavePlayerData(); // 초기 상태 서버에 저장
@@ -115,7 +121,7 @@ public class PlayerDataManager : MonoBehaviour
         }
         catch (Exception e)
         {
-            Debug.LogError($"[Cloud Load Error] {e.Message}");
+            LogApi.LogError($"[Cloud Load Error] {e.Message}");
         }
     }
 
@@ -127,11 +133,11 @@ public class PlayerDataManager : MonoBehaviour
         {
             var dataToSave = new Dictionary<string, object> { { CLOUD_DATA_KEY, CurrentPlayerData } };
             await CloudSaveService.Instance.Data.Player.SaveAsync(dataToSave);
-            Debug.LogError("서버 저장 완료");
+            LogApi.LogError("서버 저장 완료");
         }
         catch (Exception e)
         {
-            Debug.LogError($"[Cloud Save Error] {e.Message}");
+            LogApi.LogError($"[Cloud Save Error] {e.Message}");
         }
     }
     #endregion
@@ -145,14 +151,14 @@ public class PlayerDataManager : MonoBehaviour
         };
         var response = await CloudCodeService.Instance.CallEndpointAsync<GoldResponse>("GetPlayerData", parameters);
         Gold = response.success ? response.gold : 0;
-        Debug.Log($"통합 재화 데이터 로드 성공 (Gold: {Gold})");
+        LogApi.Log($"통합 재화 데이터 로드 성공 (Gold: {Gold})");
     }
 
     public async void SaveProcess()
     {
         if (!isLoadPlayerData) return;
 
-        Debug.Log("최종 저장 프로세스 시작...");
+        LogApi.Log("최종 저장 프로세스 시작...");
         LoadFromPlayerPrefs(); // PlayerPrefs -> Memory 동기화
         await SavePlayerData();  // Memory -> Cloud 업로드
     }
@@ -164,9 +170,9 @@ public class PlayerDataManager : MonoBehaviour
         try
         {
             await AuthenticationService.Instance.DeleteAccountAsync();
-            Debug.Log("계정 삭제 완료");
+            LogApi.Log("계정 삭제 완료");
         }
-        catch (Exception e) { Debug.LogError(e.Message); }
+        catch (Exception e) { LogApi.LogError(e.Message); }
     }
 
     public async Task SavePlayerName(string playerName)
@@ -176,7 +182,7 @@ public class PlayerDataManager : MonoBehaviour
             await AuthenticationService.Instance.UpdatePlayerNameAsync(playerName);
             CurrentPlayerData.name = await AuthenticationService.Instance.GetPlayerNameAsync();
         }
-        catch (Exception e) { Debug.LogError(e.Message); }
+        catch (Exception e) { LogApi.LogError(e.Message); }
     }
     #endregion
 
@@ -187,7 +193,7 @@ public class PlayerDataManager : MonoBehaviour
     /// <param name="count">저장할 골드 수량</param>
     public async void SendCoin(int count)
     {
-        Debug.Log($"[CloudCode] 골드 저장 요청: {count}");
+        LogApi.Log($"[CloudCode] 골드 저장 요청: {count}");
         try
         {
             var parameters = new Dictionary<string, object> {
@@ -202,16 +208,16 @@ public class PlayerDataManager : MonoBehaviour
             if (response.success)
             {
                 Gold = response.gold;
-                Debug.Log($"[CloudCode] 골드 저장 완료. 현재 잔액: {Gold}");
+                LogApi.Log($"[CloudCode] 골드 저장 완료. 현재 잔액: {Gold}");
             }
             else
             {
-                Debug.LogError($"[CloudCode] 저장 실패: {response.message}");
+                LogApi.LogError($"[CloudCode] 저장 실패: {response.message}");
             }
         }
         catch (Exception e)
         {
-            Debug.LogError($"[CloudCode Error] SendCoin 중 오류 발생: {e.Message}");
+            LogApi.LogError($"[CloudCode Error] SendCoin 중 오류 발생: {e.Message}");
         }
     }
 
@@ -303,7 +309,7 @@ public class PlayerDataManager : MonoBehaviour
             item.count = PlayerPrefs.GetInt(item.id.ToString(), 0);
         }
 
-        Debug.Log("로컬 데이터를 메모리에 동기화 완료");
+        LogApi.Log("로컬 데이터를 메모리에 동기화 완료");
     }
     #endregion
 }

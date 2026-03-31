@@ -14,6 +14,33 @@ using UnityEngine.UI;
 /// <summary>
 /// 일일 퀘스트의 할당, 진행도 기록, 보상 상태를 관리하는 매니저
 /// </summary>
+/*
+ * 사용 방법:
+ * 1) Remote Config에 QUEST_DEFINITIONS(json) 키를 생성합니다.
+    {
+        "daily_quests": [{
+            "id": "q_001",
+            "desc": "3번 이상 플레이하기",
+            "type": "PlayNum",
+            "goal": 3,
+            "reward": 50
+        }, {
+            "id": "q_002",
+            "desc": "5분 이상 플레이하기",
+            "type": "PlayTime",
+            "goal": 5,
+            "reward": 100
+        }, {
+            "id": "q_003",
+            "desc": "하루 출석 체크하기",
+            "type": "TodayCheck",
+            "goal": 1,
+            "reward": 10
+        }]
+    }
+ * 2) 로그인 완료 후 questBtn 클릭 시 InitializeSequence로 퀘스트 데이터를 로드합니다.
+ * 3) QuestPanel/버튼/UI 참조를 인스펙터에 연결합니다.
+ */
 public class DailyQuestManager : MonoBehaviour
 {
     public static DailyQuestManager Instance { get; private set; }
@@ -69,14 +96,14 @@ public class DailyQuestManager : MonoBehaviour
         string json = RemoteConfigService.Instance.appConfig.GetJson("QUEST_DEFINITIONS");
         if (string.IsNullOrEmpty(json))
         {
-            Debug.LogError("[Quest] Remote Config 'QUEST_DEFINITIONS' is Null or Empty");
+            LogApi.LogError("[Quest] Remote Config 'QUEST_DEFINITIONS' is Null or Empty");
             return;
         }
 
         var definitions = JsonConvert.DeserializeObject<QuestDefinitions>(json);
         if (definitions?.daily_quests == null || definitions.daily_quests.Count == 0)
         {
-            Debug.LogError("[Quest] Failed to parse QuestDefinitions or list is empty");
+            LogApi.LogError("[Quest] Failed to parse QuestDefinitions or list is empty");
             return;
         }
 
@@ -114,7 +141,7 @@ public class DailyQuestManager : MonoBehaviour
 
         // 인자값으로 빈 구조체 전달
         await RemoteConfigService.Instance.FetchConfigsAsync(new userAttributes(), new appAttributes());
-        Debug.Log("[Quest] Remote Config Fetch Completed");
+        LogApi.Log("[Quest] Remote Config Fetch Completed");
     }
     #endregion
 
@@ -147,7 +174,7 @@ public class DailyQuestManager : MonoBehaviour
         }
 
         SaveQuestData();
-        Debug.Log($"[Quest] New quests assigned for {date}");
+        LogApi.Log($"[Quest] New quests assigned for {date}");
     }
 
     /// <summary>
@@ -213,7 +240,7 @@ public class DailyQuestManager : MonoBehaviour
         {
             quest.isCompleted = true;
             SaveQuestData();
-            Debug.Log($"[Quest] {questId} marked as completed and saved.");
+            LogApi.Log($"[Quest] {questId} marked as completed and saved.");
         }
     }
     #endregion

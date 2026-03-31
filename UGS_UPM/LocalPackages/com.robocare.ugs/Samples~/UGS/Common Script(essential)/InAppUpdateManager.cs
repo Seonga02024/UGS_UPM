@@ -9,6 +9,13 @@ using UnityEngine.UI;
 
 namespace RoboCare.UGS
 {
+    /*
+     * 사용 방법:
+     * 1) Remote Config에 min_required_bundle_code_android, min_required_version_android,
+     *    force_update_message_ko, store_url_android, can_pass_update 키를 생성합니다.
+     * 2) loginService(LoginManager)의 LoginCompleted 이벤트를 받으면 업데이트 체크를 시작합니다.
+     * 3) laterButton 허용 시 UpdateCompleted 이벤트를 발행해 다음 매니저 흐름을 이어갑니다.
+     */
     // Canvas InAppUpdateUI Prefab 에 붙이기 
 public class InAppUpdateManager : MonoBehaviour
     {
@@ -93,14 +100,14 @@ public class InAppUpdateManager : MonoBehaviour
             }
             catch (Exception e)
             {
-                Debug.LogWarning("[InAppUpdate] Remote Config fetch failed. fallback values will be used. " + e.Message);
+                LogApi.LogWarning("[InAppUpdate] Remote Config fetch failed. fallback values will be used. " + e.Message);
             }
 
             var installedBundleCode = GetAndroidVersionCode();
             string currentVersion = Application.version;
             UpdateBundleCodeTexts(minimumBundleCode, installedBundleCode);
             UpdateVersionTexts(minimumVersionCode, currentVersion);
-            Debug.Log(string.Format(
+            LogApi.Log(string.Format(
                 "[InAppUpdate] installedBundleCode={0}, minimumBundleCode={1}",
                 installedBundleCode,
                 minimumBundleCode));
@@ -204,7 +211,7 @@ public class InAppUpdateManager : MonoBehaviour
         }
         catch (Exception e)
         {
-            Debug.LogWarning("[InAppUpdate] versionCode read failed: " + e.Message);
+            LogApi.LogWarning("[InAppUpdate] versionCode read failed: " + e.Message);
             return 0;
         }
 #else

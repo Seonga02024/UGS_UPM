@@ -40,7 +40,7 @@ public class GameRewardsPanel : MonoBehaviour
     /// </summary>
     public void UpdateRewardUI(int currentStar)
     {
-        Debug.Log($"현재 얻은 별 수에 따른 보상 활성화");
+        LogApi.Log($"현재 얻은 별 수에 따른 보상 활성화");
         currentPlayerStarCountText.text = "현재까지 얻은 별 : " + currentStar.ToString();
         foreach (GameObject questItem in _instantiatedRewardItems)
         {

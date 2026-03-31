@@ -41,7 +41,7 @@ public class QuestPanel : MonoBehaviour
     /// </summary>
     public void UpdateQuestProgress(QuestProgress quests)
     {
-        Debug.Log($"퀘스트 완료하여 보상 버튼 활성화 진행");
+        LogApi.Log($"퀘스트 완료하여 보상 버튼 활성화 진행");
         foreach (GameObject questItem in _instantiatedQuestItems)
         {
             QuestUIItem questItemSC = questItem.GetComponent<QuestUIItem>();
@@ -57,7 +57,7 @@ public class QuestPanel : MonoBehaviour
     /// </summary>
     public void UpdateQuestUI(QuestProgress quests) // 퀘스트 완료 시 보상 버튼 활성화 
     {
-        Debug.Log($"퀘스트 완료하여 보상 버튼 활성화 진행");
+        LogApi.Log($"퀘스트 완료하여 보상 버튼 활성화 진행");
         foreach (GameObject questItem in _instantiatedQuestItems)
         {
             QuestUIItem questItemSC = questItem.GetComponent<QuestUIItem>();

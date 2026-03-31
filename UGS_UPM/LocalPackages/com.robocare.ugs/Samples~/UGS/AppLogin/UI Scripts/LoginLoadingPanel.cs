@@ -27,7 +27,12 @@ public class LoginLoadingPanel : MonoBehaviour
     public void StartLoading()
     {
         if (_isShowing) return;
-        _co = StartCoroutine(ShowRoutine());
+
+        // StartCoroutine requires active+enabled MonoBehaviour.
+        // Apply visual state directly so callers can invoke this safely from any state.
+        _isShowing = true;
+        if (loadingPanel) loadingPanel.SetActive(true);
+        if (loadingCg) loadingCg.alpha = 1f;
     } 
 
     IEnumerator ShowRoutine()

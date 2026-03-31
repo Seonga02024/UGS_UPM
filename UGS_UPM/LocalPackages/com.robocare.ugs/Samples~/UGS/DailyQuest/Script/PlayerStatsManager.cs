@@ -2,6 +2,12 @@ namespace RoboCare.UGS
 {
 using UnityEngine;
 
+/*
+ * 사용 방법:
+ * 1) 씬에 PlayerStatsManager를 1개 배치합니다(싱글턴, DontDestroyOnLoad).
+ * 2) 게임 시작 시 BeginSession(), 종료/중단 시 EndSession()을 호출합니다.
+ * 3) 누적 플레이 시간은 GetTotalPlayTime()으로 조회합니다.
+ */
 public class PlayerStatsManager : MonoBehaviour
 {
     public static PlayerStatsManager Instance;
@@ -24,7 +30,7 @@ public class PlayerStatsManager : MonoBehaviour
     {
         isTracking = true;
         sessionStartTime = Time.time;
-        Debug.Log("[PlayerStatsManager] 플레이어 게임 플레이 시간 측정 시작!");
+        LogApi.Log("[PlayerStatsManager] 플레이어 게임 플레이 시간 측정 시작!");
     }
 
     // 게임이 끝나거나 꺼질 때 호출
@@ -36,7 +42,7 @@ public class PlayerStatsManager : MonoBehaviour
         //AddPlayTime(sessionDuration);
         isTracking = false;
         DailyQuestManager.Instance.UpdateProgress(QuestType.PlayTime, (int)(totalPlayTime/60));
-        Debug.Log("[PlayerStatsManager] 플레이어 게임 플레이 시간 측정 끝!");
+        LogApi.Log("[PlayerStatsManager] 플레이어 게임 플레이 시간 측정 끝!");
     }
 
     // --- 데이터 수정 (나중에 확장이 편리한 구조) ---

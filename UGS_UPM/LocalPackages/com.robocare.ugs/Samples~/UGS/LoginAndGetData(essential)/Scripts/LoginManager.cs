@@ -6,6 +6,12 @@ using UnityEngine;
 
 namespace RoboCare.UGS
 {
+    /*
+     * 사용 방법:
+     * 1) 첫 씬에 LoginManager 오브젝트를 배치합니다(싱글턴, DontDestroyOnLoad).
+     * 2) Awake에서 로그인(LoginCloudAsync)을 시작하고 완료 시 LoginCompleted 이벤트를 발행합니다.
+     * 3) 다른 매니저는 LoginCompleted를 구독해 후속 초기화를 시작합니다.
+     */
     // 빈 오브젝트 만들어서 붙이기 
 public class LoginManager : MonoBehaviour
     {
@@ -50,7 +56,7 @@ public class LoginManager : MonoBehaviour
         public async Task LoginCloudAsync()
         {
             await Task.Delay(3000); // 밀리초
-            Debug.Log($"[LoginService] LoginCloudAsync Loading...");
+            LogApi.Log($"[LoginService] LoginCloudAsync Loading...");
             if (_isLoggingIn)
             {
                 return;
@@ -73,11 +79,11 @@ public class LoginManager : MonoBehaviour
 
                 IsLoggedIn = true;
                 LoginCompleted?.Invoke();
-                Debug.LogError($"[LoginService] LoginCompleted Invoke");
+                LogApi.Log($"[LoginService] LoginCompleted Invoke");
             }
             catch (Exception exception)
             {
-                Debug.LogError($"[LoginService] Login failed: {exception.Message}");
+                LogApi.LogError($"[LoginService] Login failed: {exception.Message}");
             }
             finally
             {
@@ -111,7 +117,7 @@ public class LoginManager : MonoBehaviour
             try
             {
                 await AuthenticationService.Instance.SignUpWithUsernamePasswordAsync(_userId, _robotId);
-                Debug.Log($"[LoginService] Login success: _userId : {_userId} / _robotId : {_robotId} / _userName : {_userName}");
+                LogApi.Log($"[LoginService] Login success: _userId : {_userId} / _robotId : {_robotId} / _userName : {_userName}");
             }
             catch (AuthenticationException)
             {
@@ -122,7 +128,7 @@ public class LoginManager : MonoBehaviour
         private static async Task LoginAnonymouslyAsync()
         {
             await AuthenticationService.Instance.SignInAnonymouslyAsync();
-            Debug.Log("[LoginService] Login success: Anonymous login");
+            LogApi.Log("[LoginService] Login success: Anonymous login");
         }
     }
 }

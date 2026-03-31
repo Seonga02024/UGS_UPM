@@ -13,6 +13,23 @@ using UnityEngine.UI;
 /// <summary>
 /// 누적 별 점수에 따른 단계별 보상을 관리하는 매니저
 /// </summary>
+/*
+ * 사용 방법:
+ * 1) Remote Config에 GAME_REWARDS(json) 키를 생성합니다.
+        {
+            "stage_rewards": [{
+                "id": "r_001",
+                "goal": 10,
+                "reward": 5
+            }, {
+                "id": "r_002",
+                "goal": 20,
+                "reward": 5
+            }]
+        }
+ * 2) 로그인 완료 후 questBtn 클릭 시 InitializeSequence로 보상 정의를 로드합니다.
+ * 3) GameRewardsPanel/버튼/UI 참조를 인스펙터에 연결합니다.
+ */
 public class GameRewardsManager : MonoBehaviour
 {
     public static GameRewardsManager Instance { get; private set; }
@@ -83,11 +100,11 @@ public class GameRewardsManager : MonoBehaviour
 
             // Remote Config 데이터 패치
             await RemoteConfigService.Instance.FetchConfigsAsync(new userAttributes(), new appAttributes());
-            Debug.Log("[Rewards] Remote Config Fetch Completed");
+            LogApi.Log("[Rewards] Remote Config Fetch Completed");
         }
         catch (Exception e)
         {
-            Debug.LogError($"[Rewards] Remote Config Initialization Failed: {e.Message}");
+            LogApi.LogError($"[Rewards] Remote Config Initialization Failed: {e.Message}");
         }
     }
     #endregion
@@ -102,7 +119,7 @@ public class GameRewardsManager : MonoBehaviour
 
         if (string.IsNullOrEmpty(json))
         {
-            Debug.LogError("[Rewards] 'GAME_REWARDS' definition not found in Remote Config");
+            LogApi.LogError("[Rewards] 'GAME_REWARDS' definition not found in Remote Config");
             return;
         }
 
@@ -110,11 +127,11 @@ public class GameRewardsManager : MonoBehaviour
 
         if (definitions?.stage_rewards == null || definitions.stage_rewards.Count == 0)
         {
-            Debug.LogError("[Rewards] Failed to parse rewards or list is empty");
+            LogApi.LogError("[Rewards] Failed to parse rewards or list is empty");
             return;
         }
 
-        Debug.Log($"[Rewards] Loaded {definitions.stage_rewards.Count} reward stages from server.");
+        LogApi.Log($"[Rewards] Loaded {definitions.stage_rewards.Count} reward stages from server.");
         rewardsPanel.UpdateRewardLog(definitions);
     }
     #endregion
@@ -132,7 +149,7 @@ public class GameRewardsManager : MonoBehaviour
         // 2. 중복 확인
         if (rewardList.Contains(rewardId))
         {
-            Debug.LogWarning($"[Rewards] Already claimed reward: {rewardId}");
+            LogApi.LogWarning($"[Rewards] Already claimed reward: {rewardId}");
             return;
         }
 
@@ -144,7 +161,7 @@ public class GameRewardsManager : MonoBehaviour
         PlayerPrefs.SetString("CompleteGameRewards", updatedJson);
         PlayerPrefs.Save();
 
-        Debug.Log($"[Rewards] Successfully claimed and saved reward: {rewardId}");
+        LogApi.Log($"[Rewards] Successfully claimed and saved reward: {rewardId}");
         
         // 6. UI 상태 갱신
         UpdateCurrentRewardState();
@@ -164,7 +181,7 @@ public class GameRewardsManager : MonoBehaviour
             totalStarCount += PlayerPrefs.GetInt(levelKey, 0);
         }
 
-        Debug.Log($"[Rewards] Current Total Stars: {totalStarCount}");
+        LogApi.Log($"[Rewards] Current Total Stars: {totalStarCount}");
         rewardsPanel.UpdateRewardUI(totalStarCount);
     }
     #endregion

@@ -11,6 +11,27 @@ using Unity.Services.RemoteConfig;
 using UnityEngine;
 using UnityEngine.UI;
 
+/*
+ * 사용 방법:
+ * 1) Remote Config에 Store_Items(json) 키를 생성하고 스토어 아이템 목록을 등록합니다.
+        {
+            "items": [{
+                "id": "gold_pack_01",
+                "itemName": "초보자 골드 팩",
+                "description": "50,000 골드 + 보너스 5,000 골드",
+                "price_usd": 5,
+                "icon_name": "icon_gold_small"
+            }, {
+                "id": "gem_special_02",
+                "itemName": "장인의 보석 상자",
+                "description": "보석 1,000개",
+                "price_usd": 20,
+                "icon_name": "icon_gem_chest"
+            }]
+        }
+ * 2) LoginManager.LoginCompleted 이벤트 수신 후 InitializeSequence로 Cloud Save/Remote Config를 동기화합니다.
+ * 3) Cloud Save 키 INVENTORY_KEY(PlayerInventory)로 로컬 인벤토리를 서버와 동기화합니다.
+ */
 public class StoreManager : MonoBehaviour
 {
     public static StoreManager Instance { get; private set; }
@@ -31,7 +52,7 @@ public class StoreManager : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
-            DontDestroyOnLoad(gameObject);
+            DontDestroyOnLoad(transform.root.gameObject);
         }
         else
         {
@@ -121,13 +142,13 @@ public class StoreManager : MonoBehaviour
                 {
                     PlayerPrefs.SetString(INVENTORY_KEY, cloudJson);
                     PlayerPrefs.Save();
-                    Debug.Log("[Store] Cloud Data를 로컬로 동기화 완료");
+                    LogApi.Log("[Store] Cloud Data를 로컬로 동기화 완료");
                 }
             }
         }
         catch (Exception e)
         {
-            Debug.LogError($"[Store] Cloud Load 실패: {e.Message}");
+            LogApi.LogError($"[Store] Cloud Load 실패: {e.Message}");
         }
     }
 
@@ -143,11 +164,11 @@ public class StoreManager : MonoBehaviour
         {
             var data = new Dictionary<string, object> { { INVENTORY_KEY, localJson } };
             await CloudSaveService.Instance.Data.Player.SaveAsync(data);
-            Debug.Log("[Store] 로컬 데이터를 Cloud로 업로드 완료");
+            LogApi.Log("[Store] 로컬 데이터를 Cloud로 업로드 완료");
         }
         catch (Exception e)
         {
-            Debug.LogError($"[Store] Cloud Save 실패: {e.Message}");
+            LogApi.LogError($"[Store] Cloud Save 실패: {e.Message}");
         }
     }
     #endregion
@@ -164,7 +185,7 @@ public class StoreManager : MonoBehaviour
         {
             await AuthenticationService.Instance.SignInAnonymouslyAsync();
         }
-        Debug.Log("[Store] Unity Services Initialized");
+        LogApi.Log("[Store] Unity Services Initialized");
     }
     /// <summary>
     /// Remote Config를 통해 스토어 정보를 받아오고 할당 
@@ -182,7 +203,7 @@ public class StoreManager : MonoBehaviour
         // UI 패널에 데이터 전달하여 생성 요청
         if (storePanel != null)
         {
-            Debug.Log("[StoreManager] storeData : " + storeData.items.Count);
+            LogApi.Log("[StoreManager] storeData : " + storeData.items.Count);
             storePanel.InitializeStore(storeData);
         }
     }
@@ -213,7 +234,7 @@ public class StoreManager : MonoBehaviour
         SaveInventoryToDisk();
 
         // 3. (옵션) 획득 연출이나 UI 업데이트 호출
-        Debug.Log($"<color=yellow>[아이템 획득]</color> {itemId} x{amount} (총 보유: {inventory[itemId]})");
+        LogApi.Log($"<color=yellow>[아이템 획득]</color> {itemId} x{amount} (총 보유: {inventory[itemId]})");
 
         // UI가 열려있다면 즉시 갱신하도록 이벤트를 발생시키거나 직접 호출하세요.
         // UIManager.Instance.UpdateInventoryUI(); 
@@ -268,7 +289,7 @@ public class StoreManager : MonoBehaviour
                 inventory[entry.id] = entry.amount;
             }
         }
-        Debug.Log($"[Store] 인벤토리 로컬 로드 완료: {inventory.Count}종");
+        LogApi.Log($"[Store] 인벤토리 로컬 로드 완료: {inventory.Count}종");
     }
 
     #endregion

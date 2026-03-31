@@ -14,6 +14,12 @@ using UnityEngine.UI;
 /// <summary>
 /// 유니티 리더보드 서비스와 통신하여 랭킹 데이터를 표시하고 업데이트하는 매니저
 /// </summary>
+/*
+ * 사용 방법:
+ * 1) Unity Dashboard Leaderboard에 leaderboardId("Ranking")를 생성합니다.
+ * 2) rankBtn 클릭 시 GetScoresByPage가 호출되어 랭킹 패널이 열립니다.
+ * 3) 점수 저장은 SavePlayerScore, 조회는 LoadAllScores/LoadPlayerRange를 사용합니다.
+ */
 public class LeaderboardManager : MonoBehaviour
 {
     public static LeaderboardManager Instance { get; private set; }
@@ -113,7 +119,7 @@ public class LeaderboardManager : MonoBehaviour
             if (e.Reason == LeaderboardsExceptionReason.EntryNotFound)
             {
                 await LeaderboardsService.Instance.AddPlayerScoreAsync(leaderboardId, 0);
-                Debug.Log("[Leaderboard] 초기 점수(0점) 등록 완료");
+                LogApi.Log("[Leaderboard] 초기 점수(0점) 등록 완료");
             }
         }
     }
@@ -185,7 +191,7 @@ public class LeaderboardManager : MonoBehaviour
     private async Task LoadScore()
     {
         var response = await LeaderboardsService.Instance.GetPlayerScoreAsync(leaderboardId);
-        Debug.Log($"[Leaderboard] 내 정보 - Rank: {response.Rank}, Score: {response.Score}");
+        LogApi.Log($"[Leaderboard] 내 정보 - Rank: {response.Rank}, Score: {response.Score}");
     }
     #endregion
 
@@ -198,7 +204,7 @@ public class LeaderboardManager : MonoBehaviour
     private async Task SaveScore(double score)
     {
         var response = await LeaderboardsService.Instance.AddPlayerScoreAsync(leaderboardId, score);
-        Debug.Log($"[Leaderboard] 점수 저장 결과: {JsonConvert.SerializeObject(response)}");
+        LogApi.Log($"[Leaderboard] 점수 저장 결과: {JsonConvert.SerializeObject(response)}");
     }
     #endregion
 

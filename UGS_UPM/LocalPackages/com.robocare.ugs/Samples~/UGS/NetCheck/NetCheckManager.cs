@@ -5,6 +5,12 @@ using UnityEngine.UI;
 
 namespace RoboCare.UGS
 {
+    /*
+     * 사용 방법:
+     * 1) netCheckPanel(네트워크 경고 UI)과 quitBtn을 인스펙터에 연결합니다.
+     * 2) Awake에서 인터넷 연결 체크를 즉시 수행하고 결과에 따라 패널 표시를 제어합니다.
+     * 3) 필요 시 주기 체크 코루틴을 추가해 실시간 상태 감시로 확장할 수 있습니다.
+     */
     public class NetCheckManager : MonoBehaviour
     {
         [SerializeField] private GameObject netCheckPanel;
@@ -26,7 +32,7 @@ namespace RoboCare.UGS
             if (Application.internetReachability == NetworkReachability.NotReachable)
             {
                 IsInternetAvailable = false;
-                Debug.Log("No network interface reachable.");
+                LogApi.Log("No network interface reachable.");
                 yield break;
             }
 
@@ -41,7 +47,7 @@ namespace RoboCare.UGS
 
             netCheckPanel.SetActive(IsInternetAvailable ? false : true);
 
-            Debug.Log($"Internet available: {IsInternetAvailable}");
+            LogApi.Log($"Internet available: {IsInternetAvailable}");
         }
     }
 }

@@ -106,7 +106,7 @@ public class PermissionRequester : MonoBehaviour
         }
         catch (System.Exception ex)
         {
-            Debug.LogWarning($"Failed to request ignore battery optimizations: {ex.Message}");
+            LogApi.LogWarning($"Failed to request ignore battery optimizations: {ex.Message}");
         } 
 #endif
     }
@@ -126,7 +126,7 @@ public class PermissionRequester : MonoBehaviour
         }
         catch (System.Exception ex)
         {
-            Debug.LogWarning($"Failed to read battery optimization state: {ex.Message}");
+            LogApi.LogWarning($"Failed to read battery optimization state: {ex.Message}");
             return false;
         }
 #else

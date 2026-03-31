@@ -12,6 +12,24 @@ using UnityEngine.UI;
 
 namespace RoboCare.UGS
 {
+    /*
+     * 사용 방법:
+     * 1) Remote Config에 ATTENDANCE_REWARDS(json) 키를 생성합니다.
+        {
+        "day_rewards": [{
+            "id": "1",
+            "reward": 100000
+        }, {
+            "id": "2",
+            "reward": 100000
+        }]
+        }
+     * 2) 로그인 완료 후 출석 버튼(attendancCheckBtn) 클릭 시 InitializeSequence가 실행됩니다.
+     * 3) AttendancCheckPanel, 버튼, 날짜 텍스트를 인스펙터에 연결합니다.
+     * 4) AttendanceStateKey 는 Cloud Save Player Data ATTENDANCE_STATE 에 생성되며 초기 파싱할 때 없다면 처음 출석하는 유저 상태로 전환
+     * 5) Cloud code 'ClaimAttendanceReward' 를 통해서 출석 체크 했다는 이벤트를 보내고 서버에서 검증해 리워드 보상 및 AttendanceStateKey 업데이트 
+     * 6) Cloud code 는 해당 폴더 안 ClaimAttendanceReward.js 참고 
+     */
     public class AttendancCheckManager : MonoBehaviour
     {
         public static AttendancCheckManager Instance { get; private set; }
@@ -104,7 +122,7 @@ namespace RoboCare.UGS
             }
             catch (Exception e)
             {
-                Debug.LogError($"[Attendance] Remote Config init failed: {e.Message}");
+                LogApi.LogError($"[Attendance] Remote Config init failed: {e.Message}");
             }
         }
 
@@ -113,14 +131,14 @@ namespace RoboCare.UGS
             string json = RemoteConfigService.Instance.appConfig.GetJson(AttendanceRewardsKey);
             if (string.IsNullOrEmpty(json))
             {
-                Debug.LogError("[Attendance] ATTENDANCE_REWARDS not found in Remote Config.");
+                LogApi.LogError("[Attendance] ATTENDANCE_REWARDS not found in Remote Config.");
                 return;
             }
 
             cachedDefinitions = JsonConvert.DeserializeObject<DayRewardDefinitions>(json);
             if (cachedDefinitions?.day_rewards == null || cachedDefinitions.day_rewards.Count == 0)
             {
-                Debug.LogError("[Attendance] Parsed rewards are empty.");
+                LogApi.LogError("[Attendance] Parsed rewards are empty.");
                 return;
             }
 
@@ -150,7 +168,7 @@ namespace RoboCare.UGS
             var req = new ClaimAttendanceRewardRequest();
             ClaimAttendanceReward(req, res =>
             {
-                Debug.Log(
+                LogApi.Log(
                     $"[Callback] success={res.success}, currentMoney={res.currentMoney}, rewardDay={res.rewardDay}, reward={res.reward}, claimCount={res.claimCount}, monthKey={res.monthKey}, error={res.errorCode}");
             });
         }
@@ -202,7 +220,7 @@ namespace RoboCare.UGS
             }
             catch (Exception e)
             {
-                Debug.LogError($"[Attendance] Refresh state failed: {e.Message}");
+                LogApi.LogError($"[Attendance] Refresh state failed: {e.Message}");
             }
         }
 
@@ -332,7 +350,7 @@ namespace RoboCare.UGS
             }
             catch (Exception e)
             {
-                Debug.LogError($"[ServerEventManager] ClaimAttendanceReward failed: {e.Message}");
+                LogApi.LogError($"[ServerEventManager] ClaimAttendanceReward failed: {e.Message}");
                 var errorResponse = BuildAttendanceErrorResponse("CLOUD_CODE_ERROR");
                 NotifyClaimAttendanceRewardResult(errorResponse);
                 return errorResponse;

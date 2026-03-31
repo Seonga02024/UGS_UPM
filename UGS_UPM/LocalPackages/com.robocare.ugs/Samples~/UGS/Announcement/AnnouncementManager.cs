@@ -9,6 +9,12 @@ using UnityEngine.UI;
 
 namespace RoboCare.UGS
 {
+    /*
+     * 사용 방법:
+     * 1) Remote Config에 announcement_message(string) 키를 생성합니다.
+     * 2) LoginManager의 LoginCompleted 이벤트를 받으면 공지 Fetch를 시작합니다.
+     * 3) announcementPanel/messageText/closeButton을 인스펙터에 연결합니다.
+     */
     public class AnnouncementManager : MonoBehaviour
     {
 
@@ -61,13 +67,13 @@ namespace RoboCare.UGS
                 await RemoteConfigService.Instance.FetchConfigsAsync(new UserAttributes(), new AppAttributes());
 
                 string announcementMessage = RemoteConfigService.Instance.appConfig.GetString(AnnouncementKey);
-                Debug.Log("[AnnouncementManager] announcementMessage : " + announcementMessage);
+                LogApi.Log("[AnnouncementManager] announcementMessage : " + announcementMessage);
                 if (!string.IsNullOrEmpty(announcementMessage))
                 {
                     if (messageText != null)
                     {
                         messageText.text = announcementMessage;
-                        Debug.Log("[AnnouncementManager] announcementMessage : " + announcementMessage);
+                        LogApi.Log("[AnnouncementManager] announcementMessage : " + announcementMessage);
                     }
 
                     announcementPanel.SetActive(true);
@@ -77,7 +83,7 @@ namespace RoboCare.UGS
             }
             catch (Exception e)
             {
-                Debug.LogWarning("[AnnouncementManager] Remote Config fetch failed. fallback values will be used. " + e.Message);
+                LogApi.LogWarning("[AnnouncementManager] Remote Config fetch failed. fallback values will be used. " + e.Message);
             }
         }
 

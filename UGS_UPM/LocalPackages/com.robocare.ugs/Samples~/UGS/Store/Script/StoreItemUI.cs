@@ -42,7 +42,7 @@ public class StoreItemUI : MonoBehaviour
         itemNameText.text = data.itemName;
         descriptionText.text = data.description;
         descriptionPanel.SetActive(false);
-        Debug.Log("[StoreItemUI] itemName : " + data.itemName + " / description : " + data.description);
+        LogApi.Log("[StoreItemUI] itemName : " + data.itemName + " / description : " + data.description);
 
         // 수량 표시 (예: "보유: 5개" 혹은 "구매 완료")
         if (isOwned)
@@ -77,7 +77,7 @@ public class StoreItemUI : MonoBehaviour
             
             // 구매 성공 후 UI 즉시 갱신 (수동 혹은 이벤트 방식)
             UpdateOwnedState(StoreManager.Instance.IsItemOwned(itemData.id));
-            Debug.Log($"{itemData.itemName} 구매 시도 완료!");   
+            LogApi.Log($"{itemData.itemName} 구매 시도 완료!");   
         }
     }
 }

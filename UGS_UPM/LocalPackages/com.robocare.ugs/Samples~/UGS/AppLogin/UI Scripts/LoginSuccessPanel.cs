@@ -139,7 +139,7 @@ public class LoginSuccessPanel : MonoBehaviour
             Hidden?.Invoke();
             OnConfirmPlatform?.Invoke();
             FinishAppLogin?.Invoke();
-            Debug.Log("[LoginSuccessPanel] FinishAppLogin Invoke");
+            LogApi.Log("[LoginSuccessPanel] FinishAppLogin Invoke");
         }
         else
             OnChangePlatform?.Invoke();
