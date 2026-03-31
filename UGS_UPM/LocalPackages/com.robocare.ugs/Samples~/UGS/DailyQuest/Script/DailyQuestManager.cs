@@ -54,6 +54,7 @@ public class DailyQuestManager : MonoBehaviour
             OpenPanel(true);
         });
         closeBtn.onClick.AddListener(() => OpenPanel(false));
+            OpenPanel(false);
     }
     #endregion
 

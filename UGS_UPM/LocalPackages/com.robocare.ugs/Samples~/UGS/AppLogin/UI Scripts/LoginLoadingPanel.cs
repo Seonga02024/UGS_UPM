@@ -28,7 +28,7 @@ public class LoginLoadingPanel : MonoBehaviour
     {
         if (_isShowing) return;
         _co = StartCoroutine(ShowRoutine());
-    }
+    } 
 
     IEnumerator ShowRoutine()
     {

@@ -9,6 +9,8 @@ namespace RoboCare.UGS
     // 빈 오브젝트 만들어서 붙이기 
 public class LoginManager : MonoBehaviour
     {
+        public static LoginManager Instance { get; private set; }
+
         //[SerializeField] private LoginSuccessPanel loginSuccessPanel;
         //[SerializeField] private LoginTokenReader loginTokenReader;
         public bool IsLoggedIn { get; private set; }
@@ -20,13 +22,23 @@ public class LoginManager : MonoBehaviour
         private string _robotId = "";
         private string _userName = "";
 
-        private void Start()
+        private void Awake()
         {
+            if (Instance == null)
+            {
+                Instance = this;
+                DontDestroyOnLoad(gameObject);
+            }
+            else
+            {
+                Destroy(gameObject);
+            }
+
             // if (loginSuccessPanel != null)
             // {
             //     loginSuccessPanel.FinishAppLogin += HandleLoginSuccessPanelFinished;
             // }
-            
+
             HandleLoginSuccessPanelFinished();
         }
 
@@ -37,6 +49,7 @@ public class LoginManager : MonoBehaviour
 
         public async Task LoginCloudAsync()
         {
+            await Task.Delay(3000); // 밀리초
             Debug.Log($"[LoginService] LoginCloudAsync Loading...");
             if (_isLoggingIn)
             {
@@ -60,6 +73,7 @@ public class LoginManager : MonoBehaviour
 
                 IsLoggedIn = true;
                 LoginCompleted?.Invoke();
+                Debug.LogError($"[LoginService] LoginCompleted Invoke");
             }
             catch (Exception exception)
             {

@@ -39,7 +39,32 @@ public class StoreManager : MonoBehaviour
         }
     }
 
-    private async void Start()
+    private void Start()
+    {
+        if (UnityServices.State == ServicesInitializationState.Uninitialized)
+        {
+            if (LoginManager.Instance != null)
+            {
+                LoginManager.Instance.LoginCompleted += HandleLoginCompleted;
+                if (LoginManager.Instance.IsLoggedIn)
+                {
+                    HandleLoginCompleted();
+                }
+            }
+        }
+        else
+        {
+            HandleLoginCompleted();
+        }
+    
+    }
+    
+    private void HandleLoginCompleted()
+    {
+        _ = PostLoginSequence();
+    }
+
+    private async Task PostLoginSequence()
     {
         // 1. 서비스 초기화 (Cloud Save 사용을 위해 필수)
         await InitializeUnityServices();
@@ -59,12 +84,12 @@ public class StoreManager : MonoBehaviour
     }
     
     private void OnApplicationFocus(bool focus)
-    {
-        if (!focus) // 포커스를 잃을 때(백그라운드 이동 시) 저장
         {
-            SyncLocalToCloud();
+            if (!focus) // 포커스를 잃을 때(백그라운드 이동 시) 저장
+            {
+                SyncLocalToCloud();
+            }
         }
-    }
 
     private void OnApplicationPause(bool pauseStatus)
     {

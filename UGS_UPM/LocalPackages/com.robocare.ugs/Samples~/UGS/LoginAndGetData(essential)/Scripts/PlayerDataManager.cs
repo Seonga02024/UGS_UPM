@@ -52,9 +52,13 @@ public class PlayerDataManager : MonoBehaviour
 
         // 초기화 시 데이터 비우기
         CurrentPlayerData = null;
-        if (loginManager != null)
+        if (LoginManager.Instance != null)
         {
-            loginManager.LoginCompleted += HandleLoginCompleted;
+            LoginManager.Instance.LoginCompleted += HandleLoginCompleted;
+            if (LoginManager.Instance.IsLoggedIn)
+            {
+                HandleLoginCompleted();
+            }
         }
     }
 
