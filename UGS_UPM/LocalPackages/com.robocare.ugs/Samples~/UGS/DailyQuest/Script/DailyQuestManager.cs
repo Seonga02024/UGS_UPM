@@ -6,7 +6,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Unity.Services.Authentication;
-using Unity.Services.Core;
+    using Unity.Services.CloudCode;
+    using Unity.Services.Core;
 using Unity.Services.RemoteConfig;
 using UnityEngine;
 using UnityEngine.UI;
@@ -81,7 +82,6 @@ public class DailyQuestManager : MonoBehaviour
             OpenPanel(true);
         });
         closeBtn.onClick.AddListener(() => OpenPanel(false));
-            OpenPanel(false);
     }
     #endregion
 
@@ -96,14 +96,14 @@ public class DailyQuestManager : MonoBehaviour
         string json = RemoteConfigService.Instance.appConfig.GetJson("QUEST_DEFINITIONS");
         if (string.IsNullOrEmpty(json))
         {
-            LogApi.LogError("[Quest] Remote Config 'QUEST_DEFINITIONS' is Null or Empty");
+            Debug.LogError("[Quest] Remote Config 'QUEST_DEFINITIONS' is Null or Empty");
             return;
         }
 
         var definitions = JsonConvert.DeserializeObject<QuestDefinitions>(json);
         if (definitions?.daily_quests == null || definitions.daily_quests.Count == 0)
         {
-            LogApi.LogError("[Quest] Failed to parse QuestDefinitions or list is empty");
+            Debug.LogError("[Quest] Failed to parse QuestDefinitions or list is empty");
             return;
         }
 
@@ -122,9 +122,6 @@ public class DailyQuestManager : MonoBehaviour
         // UI 초기화
         questPanel.UpdateQuestUI(currentStatus);
         OpenPanel(false);
-
-        // 오늘 첫 접속 시 출석 체크 진행도 업데이트
-        UpdateProgress(QuestType.TodayCheck, 1);
     }
 
     private async Task InitializeRemoteConfig()
@@ -141,7 +138,7 @@ public class DailyQuestManager : MonoBehaviour
 
         // 인자값으로 빈 구조체 전달
         await RemoteConfigService.Instance.FetchConfigsAsync(new userAttributes(), new appAttributes());
-        LogApi.Log("[Quest] Remote Config Fetch Completed");
+        Debug.Log("[Quest] Remote Config Fetch Completed");
     }
     #endregion
 
@@ -174,7 +171,7 @@ public class DailyQuestManager : MonoBehaviour
         }
 
         SaveQuestData();
-        LogApi.Log($"[Quest] New quests assigned for {date}");
+        Debug.Log($"[Quest] New quests assigned for {date}");
     }
 
     /// <summary>
@@ -211,6 +208,12 @@ public class DailyQuestManager : MonoBehaviour
                 if (parsedType == type && !q.isCompleted)
                 {
                     q.currentProgress += amount;
+                    // 한 판 퀘스트 따로 분기 
+                    if (type == QuestType.Score || type == QuestType.Star)
+                        {
+                            q.currentProgress = amount;
+                        }
+                    
                     isChanged = true;
 
                     // 완료 여부에 따른 UI 연출 분기
@@ -240,7 +243,7 @@ public class DailyQuestManager : MonoBehaviour
         {
             quest.isCompleted = true;
             SaveQuestData();
-            LogApi.Log($"[Quest] {questId} marked as completed and saved.");
+            Debug.Log($"[Quest] {questId} marked as completed and saved.");
         }
     }
     #endregion
@@ -284,11 +287,86 @@ public class DailyQuestManager : MonoBehaviour
             questPanel.gameObject.SetActive(isActive);
         }
     }
+        #endregion
+
+        #region cloud code
+    private const string CompleteQuestRewardEndpoint = "CompleteQuestReward";
+    public event Action<CompleteQuestRewardResponse> OnCompleteQuestRewardCompleted;
+    private static bool IsValidRequest(CompleteQuestRewardRequest request)
+        {
+            return request != null && !string.IsNullOrWhiteSpace(request.QUEST_ID);
+        }
+
+    private static CompleteQuestRewardResponse BuildCompleteQuestErrorResponse(string errorCode)
+    {
+        return new CompleteQuestRewardResponse
+        {
+            success = false,
+            errorCode = errorCode,
+            questId = string.Empty,
+            reward = 0,
+            currentMoney = 0L,
+            updated = false,
+            message = errorCode
+        };
+    }
+
+        public async Task<CompleteQuestRewardResponse> CompleteQuestRewardAsync(CompleteQuestRewardRequest request)
+        {
+            if (!IsValidRequest(request))
+            {
+                var invalidResponse = BuildCompleteQuestErrorResponse("INVALID_PARAMS");
+                NotifyCompleteQuestRewardResult(invalidResponse);
+                return invalidResponse;
+            }
+
+            var parameters = new Dictionary<string, object>
+        {
+            { "questId", request.QUEST_ID }
+        };
+
+            try
+            {
+                CompleteQuestRewardResponse response =
+                    await CloudCodeService.Instance.CallEndpointAsync<CompleteQuestRewardResponse>(
+                        CompleteQuestRewardEndpoint,
+                        parameters);
+
+                if (response == null)
+                {
+                    response = BuildCompleteQuestErrorResponse("EMPTY_RESPONSE");
+                }
+
+                NotifyCompleteQuestRewardResult(response);
+                return response;
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[ServerEventManager] CompleteQuestReward failed: {e.Message}");
+                var errorResponse = BuildCompleteQuestErrorResponse("CLOUD_CODE_ERROR");
+                NotifyCompleteQuestRewardResult(errorResponse);
+                return errorResponse;
+            }
+        }
+
+    public async void CompleteQuestReward(
+        CompleteQuestRewardRequest request = null,
+        Action<CompleteQuestRewardResponse> callback = null)
+    {
+        CompleteQuestRewardResponse response = await CompleteQuestRewardAsync(request);
+        callback?.Invoke(response);
+    }
+
+    private void NotifyCompleteQuestRewardResult(CompleteQuestRewardResponse response)
+    {
+        OnCompleteQuestRewardCompleted?.Invoke(response);
+    }
+    
     #endregion
 }
 
 #region [Data Models & Enums]
-public enum QuestType { PlayNum = 0, PlayTime = 1, TodayCheck = 2 }
+public enum QuestType { PlayNum = 0, PlayTime = 1, Score = 2, Star = 3, Stars = 3 }
 
 [Serializable] public class QuestDefinitions { public List<DataQuest> daily_quests; }
 

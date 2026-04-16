@@ -35,27 +35,65 @@ public class QuestUIItem : MonoBehaviour
         if (_data.isCompleted) return;
         _data.isCompleted = true;
         completedBlock.SetActive(true);
-        PlayerDataManager.Instance.SendCompleteQuest(_data.id);
-        DailyQuestManager.Instance.CompleteQuest(_data.id);
+        SendCompleteQuest(_data.id);
     }
+    
+    // 퀘스트 완료 시, cloud code 를 통해 보상 지급 
+    public void SendCompleteQuest(string questId){
+        if (string.IsNullOrWhiteSpace(questId))
+        {
+            Debug.LogError("[PlayerDataManager] SendCompleteQuest failed: questId is empty.");
+            return;
+        }
+
+        var req = new CompleteQuestRewardRequest
+        {
+            QUEST_ID = questId
+        };
+
+        if (ServerEventManager.Instance == null)
+        {
+            Debug.LogError("[PlayerDataManager] SendCompleteQuest failed: ServerEventManager.Instance is null.");
+            return;
+        }
+
+        DailyQuestManager.Instance.CompleteQuestReward(req, res =>
+        {
+            if (res == null)
+            {
+                Debug.LogError("[PlayerDataManager] SendCompleteQuest callback is null.");
+                return;
+            }
+
+            if (res.success)
+            {
+                PlayerDataManager.Gold = (int)res.currentMoney;
+                // 재화 UI 업데이트 따로 추가  
+                DailyQuestManager.Instance.CompleteQuest(_data.id);
+            }
+
+            Debug.Log($"[PlayerDataManager][CompleteQuestReward Callback] success={res.success}, questId={res.questId}, reward={res.reward}, currentMoney={res.currentMoney}, error={res.errorCode}, message={res.message}");
+        });
+    }
+
     #endregion
 
-    #region [Public Method]
-    /// <summary>
-    /// 처음에 기본 값 세팅 
-    /// </summary>
-    public void SetQuest(QuestProgress activeQuest)
-    {
-        _data = activeQuest;
-        questId = _data.id;
-        questNameText.text = _data.desc;
-        goalText.text = _data.goal.ToString();
-        rewardText.text = _data.reward.ToString();
-        currentProgressText.text = _data.currentProgress.ToString();
-        getRewardBtn.enabled = false;
-        if (_data.isCompleted) completedBlock.SetActive(true);
-        else completedBlock.SetActive(false);
-    }
+        #region [Public Method]
+        /// <summary>
+        /// 처음에 기본 값 세팅 
+        /// </summary>
+        public void SetQuest(QuestProgress activeQuest)
+        {
+            _data = activeQuest;
+            questId = _data.id;
+            questNameText.text = _data.desc;
+            goalText.text = _data.goal.ToString();
+            rewardText.text = _data.reward.ToString();
+            currentProgressText.text = _data.currentProgress.ToString();
+            getRewardBtn.enabled = false;
+            if (_data.isCompleted) completedBlock.SetActive(true);
+            else completedBlock.SetActive(false);
+        }
 
     /// <summary>
     /// 조건 달성하여 보상 받을 수 있는 상태 변화 

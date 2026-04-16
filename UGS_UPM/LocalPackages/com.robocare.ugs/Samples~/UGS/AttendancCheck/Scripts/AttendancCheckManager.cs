@@ -168,7 +168,12 @@ namespace RoboCare.UGS
             var req = new ClaimAttendanceRewardRequest();
             ClaimAttendanceReward(req, res =>
             {
-                HandleClaimAttendanceCompleted(res);
+                if (res.success)
+                {
+                    PlayerDataManager.Gold = (int)res.currentMoney;
+                    // 재화 UI 업데이트 따로 추가  
+                    HandleClaimAttendanceCompleted(res);
+                }
                 LogApi.Log(
                     $"[Callback] success={res.success}, currentMoney={res.currentMoney}, rewardDay={res.rewardDay}, reward={res.reward}, claimCount={res.claimCount}, monthKey={res.monthKey}, error={res.errorCode}");
             });

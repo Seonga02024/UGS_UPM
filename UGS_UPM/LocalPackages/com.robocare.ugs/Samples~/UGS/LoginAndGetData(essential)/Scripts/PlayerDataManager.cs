@@ -166,6 +166,64 @@ public class PlayerDataManager : MonoBehaviour
         LogApi.Log($"통합 재화 데이터 로드 성공 (Gold: {Gold})");
     }
 
+    private async Task UpdateLocalCoin()
+    {
+        // var parameters = new Dictionary<string, object> {
+        //     { "playerId", AuthenticationService.Instance.PlayerId },
+        //     { "action", "GET_PLAYER_GOLD_DATA" }
+        // };
+        // var response = await CloudCodeService.Instance.CallEndpointAsync<GoldResponse>("GetPlayerData", parameters);
+        // Gold = response.success ? response.gold : 0;
+        // Debug.Log($"통합 재화 데이터 로드 성공 (Gold: {Gold})");
+        
+        LogApi.Log("[PlayerDataManager] UpdateCoin start");
+        
+        var tcs = new TaskCompletionSource<bool>();
+        var req = new GetOrInitPlayerMoneyRequest { PLAYER_ID = AuthenticationService.Instance.PlayerId };
+
+        ServerEventManager.Instance.GetOrInitPlayerMoney(req, res =>
+        {
+            tcs.TrySetResult(res.success);
+            if (res.success)
+            {
+                Gold = (int)res.money;
+                // 재화 UI 업데이트 추가 
+            }
+            Debug.Log($"[PlayerDataManager][GetOrInitPlayerMoneyRequest Callback] success={res.success}, money={res.money}, updated={res.updated}");
+        });
+
+        bool isSuccess = await tcs.Task;
+    }
+
+    public async void SpendGold(int count)
+    {
+        try
+        {
+            var parameters = new Dictionary<string, object> {
+                { "playerId", AuthenticationService.Instance.PlayerId },
+                { "amount", count }
+            };
+
+            // Cloud Code의 "GetPlayerData" 엔드포인트 호출
+            var response = await CloudCodeService.Instance.CallEndpointAsync<GoldResponse>("SpendGold", parameters);
+
+            if (response.success)
+            {
+                Gold = response.gold;
+                // 재화 UI 업데이트 추가 
+                Debug.Log($"[CloudCode] 골드 저장 완료. 현재 잔액: {Gold}");
+            } 
+            else
+            {
+                Debug.LogError($"[CloudCode] 저장 실패: {response.message}");
+            }
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"[CloudCode Error] SpendGold 중 오류 발생: {e.Message}");
+        }
+    }
+
     public async void SaveProcess()
     {
         if (!isLoadPlayerData) return;
