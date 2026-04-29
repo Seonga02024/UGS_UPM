@@ -23,14 +23,10 @@ public class ChangePlayerNameUI : MonoBehaviour
     private void Start()
     {
         playerSettingPanel.SetActive(false);
-        if (playerDataManager != null)
+        if (PlayerDataManager.Instance != null)
         {
-            playerDataManager.GetDataCompleted += HandleGetDataCompleted;
+            PlayerDataManager.Instance.ChangeNameCompleted += HandleChangeNameCompleted;
         }
-    }
-
-    private void HandleGetDataCompleted()
-    {
         if (playerSettingBtn) playerSettingBtn.onClick.AddListener(() =>
             {
                 playerNameText.text = "현재 플레이어 이름 : " + PlayerDataManager.CurrentPlayerData.name.Split('#')[0];
@@ -41,12 +37,24 @@ public class ChangePlayerNameUI : MonoBehaviour
         {
             savePlayerBtn.onClick.AddListener(async () =>
             {
+                if (!PlayerNameValidator.IsValid(playerNameIF.text))
+                {
+                    Debug.LogWarning("[ChangePlayerName] 부적절한 단어가 포함되어 저장할 수 없습니다.");
+                    playerNameText.text = "사용할 수 없는 이름입니다.";
+                    return;
+                }
                 await PlayerDataManager.Instance.SavePlayerName(playerNameIF.text);
-                playerNameText.text = "현재 플레이어 이름 : " + playerNameIF.text;
             });
         }
         if (deletePlayerBtn) deletePlayerBtn.onClick.AddListener(async () => await PlayerDataManager.Instance.DeletePlayer());
-        if (CloseBtn) CloseBtn.onClick.AddListener(() => playerSettingPanel.SetActive(false));
+        if (CloseBtn) CloseBtn.onClick.AddListener(() =>
+        {
+            playerSettingPanel.SetActive(false);
+        });
+    }
+    
+    private void HandleChangeNameCompleted(){
+        playerNameText.text = "현재 플레이어 이름 : " + PlayerDataManager.CurrentPlayerData.name;
     }
 }
 }

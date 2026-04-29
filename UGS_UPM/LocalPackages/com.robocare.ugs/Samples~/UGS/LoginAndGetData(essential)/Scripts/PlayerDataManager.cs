@@ -43,6 +43,7 @@ public class PlayerDataManager : MonoBehaviour
     private bool isLoadPlayerData = false;
     #endregion
     public event Action GetDataCompleted;
+    public event Action ChangeNameCompleted;
 
     private void Start()
     {
@@ -251,6 +252,7 @@ public class PlayerDataManager : MonoBehaviour
         {
             await AuthenticationService.Instance.UpdatePlayerNameAsync(playerName);
             CurrentPlayerData.name = await AuthenticationService.Instance.GetPlayerNameAsync();
+            ChangeNameCompleted.Invoke();
         }
         catch (Exception e) { LogApi.LogError(e.Message); }
     }
