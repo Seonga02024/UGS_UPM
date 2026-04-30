@@ -17,7 +17,7 @@ namespace RoboCare.UGS
      * 3) laterButton 허용 시 UpdateCompleted 이벤트를 발행해 다음 매니저 흐름을 이어갑니다.
      */
     // Canvas InAppUpdateUI Prefab 에 붙이기 
-public class InAppUpdateManager : MonoBehaviour
+   public class InAppUpdateManager : MonoBehaviour
     {
         [SerializeField] private LoginManager loginService;
 
@@ -25,6 +25,7 @@ public class InAppUpdateManager : MonoBehaviour
         [SerializeField] private string minimumBundleCodeKey = "min_required_bundle_code_android";
         [SerializeField] private string minimumVersionKey = "min_required_version_android";
         [SerializeField] private string forceUpdateMessageKey = "force_update_message_ko";
+        [SerializeField] private string forceUpdateDetailMessageKey = "force_update_message_detail_ko";
         [SerializeField] private string storeUrlKey = "store_url_android";
         [SerializeField] private string canPassUpdate = "can_pass_update";
 
@@ -34,10 +35,14 @@ public class InAppUpdateManager : MonoBehaviour
         [SerializeField] private string fallbackMessage = "A new update is required.";
         [SerializeField] private string fallbackStoreUrl = "market://details?id=com.robocare.smartbot";
         [SerializeField] private bool fallbackCanPassUpdate = true;
+        [SerializeField] private string fallbackDetailMessage = "저희 앱을 이용해주시는 사용자님께 \n진심으로 감사드립니다. 더 나은 서비스를 \n위하여 앱을 업데이트 하시길 바랍니다. \n감사합니다.";
 
         [Header("Optional UI")]
+        [SerializeField] private Button cheatButton;
+        [SerializeField] private GameObject cheatVersion;
         [SerializeField] private GameObject updatePanel;
         [SerializeField] private TMP_Text messageText;
+        [SerializeField] private TMP_Text detailMessageText;
         [SerializeField] private TMP_Text MinimumBundleCodeText;
         [SerializeField] private TMP_Text CurrentBundleCodeText;
         [SerializeField] private TMP_Text MinimumVersionText;
@@ -46,9 +51,11 @@ public class InAppUpdateManager : MonoBehaviour
         [SerializeField] private Button laterButton;
         private bool _canPassUpdate;
         public event Action UpdateCompleted;
+        private int cheatNum = 0;
 
         private void Start()
         {
+            cheatVersion.SetActive(false);
             updatePanel.SetActive(false);
             if (loginService != null)
             {
@@ -59,10 +66,24 @@ public class InAppUpdateManager : MonoBehaviour
             {
                 laterButton.onClick.AddListener(() =>
                 {
+                    //PlayClickSound();
                     if (updatePanel != null)
                     {
                         updatePanel.SetActive(false);
                         UpdateCompleted?.Invoke();
+                    }
+                });
+            }
+
+            if (cheatButton != null)
+            {
+                cheatButton.onClick.AddListener(() =>
+                {
+                    //PlayClickSound();
+                    cheatNum++;
+                    if (cheatNum > 5)
+                    {
+                        cheatVersion.SetActive(true);
                     }
                 });
             }
@@ -86,6 +107,7 @@ public class InAppUpdateManager : MonoBehaviour
             var minimumVersionCode = fallbackMinimumVersion;
             var updateMessage = fallbackMessage;
             var storeUrl = fallbackStoreUrl;
+            var updateDetailMessage = fallbackDetailMessage;
 
             try
             {
@@ -95,26 +117,27 @@ public class InAppUpdateManager : MonoBehaviour
                 minimumBundleCode = (int)RemoteConfigService.Instance.appConfig.GetInt(minimumBundleCodeKey, fallbackMinimumBundleCode);
                 minimumVersionCode = RemoteConfigService.Instance.appConfig.GetString(minimumVersionKey, fallbackMinimumVersion);
                 updateMessage = RemoteConfigService.Instance.appConfig.GetString(forceUpdateMessageKey, fallbackMessage);
+                updateDetailMessage = RemoteConfigService.Instance.appConfig.GetString(forceUpdateDetailMessageKey, fallbackDetailMessage);
                 storeUrl = RemoteConfigService.Instance.appConfig.GetString(storeUrlKey, fallbackStoreUrl);
                 _canPassUpdate = RemoteConfigService.Instance.appConfig.GetBool(canPassUpdate, fallbackCanPassUpdate);
             }
             catch (Exception e)
             {
-                LogApi.LogWarning("[InAppUpdate] Remote Config fetch failed. fallback values will be used. " + e.Message);
+                Debug.LogWarning("[InAppUpdate] Remote Config fetch failed. fallback values will be used. " + e.Message);
             }
 
             var installedBundleCode = GetAndroidVersionCode();
             string currentVersion = Application.version;
             UpdateBundleCodeTexts(minimumBundleCode, installedBundleCode);
             UpdateVersionTexts(minimumVersionCode, currentVersion);
-            LogApi.Log(string.Format(
+            Debug.Log(string.Format(
                 "[InAppUpdate] installedBundleCode={0}, minimumBundleCode={1}",
                 installedBundleCode,
                 minimumBundleCode));
 
             if (installedBundleCode < minimumBundleCode)
             {
-                ShowUpdateUi(updateMessage, storeUrl);
+                ShowUpdateUi(updateMessage, updateDetailMessage, storeUrl);
             }
             else
             {
@@ -135,7 +158,7 @@ public class InAppUpdateManager : MonoBehaviour
             }
         }
 
-        private void ShowUpdateUi(string message, string storeUrl)
+        private void ShowUpdateUi(string message, string detailMessage, string storeUrl)
         {
             if (updatePanel != null)
             {
@@ -145,6 +168,11 @@ public class InAppUpdateManager : MonoBehaviour
             if (messageText != null)
             {
                 messageText.text = message;
+            }
+
+            if (detailMessageText != null)
+            {
+                detailMessageText.text = detailMessage;
             }
 
             if (updateButton != null)
@@ -211,7 +239,7 @@ public class InAppUpdateManager : MonoBehaviour
         }
         catch (Exception e)
         {
-            LogApi.LogWarning("[InAppUpdate] versionCode read failed: " + e.Message);
+            Debug.LogWarning("[InAppUpdate] versionCode read failed: " + e.Message);
             return 0;
         }
 #else
@@ -226,5 +254,13 @@ public class InAppUpdateManager : MonoBehaviour
         private struct AppAttributes
         {
         }
+        
+        // private static void PlayClickSound()
+        // {
+        //     if (AudioManager.Instance != null)
+        //     {
+        //         AudioManager.Instance?.PlayButtonSound();
+        //     }
+        // }
     }
 }
