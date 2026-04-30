@@ -13,6 +13,7 @@ public class LoadingLoginAndGetDataUI : MonoBehaviour
         [Header("UI Components")]
         [SerializeField] private GameObject blockPanel;
         [SerializeField] private TMP_Text blockPanelText;
+        public bool isCheckPlayerData = true;
         private string baseMessage = "데이터 불러오는 중";
         #endregion
 
@@ -24,6 +25,12 @@ public class LoadingLoginAndGetDataUI : MonoBehaviour
             if (playerDataManager != null)
             {
                 playerDataManager.GetDataCompleted += HandleGetDataCompleted;
+            }
+            if(isCheckPlayerData == false){
+                if (LoginManager.Instance != null)
+                {
+                    LoginManager.Instance.LoginCompleted += HandleGetDataCompleted;
+                }
             }
         }
 
