@@ -27,6 +27,8 @@ public class LoginManager : MonoBehaviour
         private string _userId = "";
         private string _robotId = "";
         private string _userName = "";
+        private string _id = "";
+        private string _password = "";
 
         private void Awake()
         {
@@ -113,15 +115,16 @@ public class LoginManager : MonoBehaviour
             _robotId = "Password123!" + PlayerPrefs.GetString("robotid");
             _userId = "testuser" + PlayerPrefs.GetString("user");
             _userName = PlayerPrefs.GetString("username");
+            (_id, _password) = UgsCredentialGenerator.CreateCredentials(PlayerPrefs.GetString("user"));
 
             try
             {
-                await AuthenticationService.Instance.SignUpWithUsernamePasswordAsync(_userId, _robotId);
-                LogApi.Log($"[LoginService] Login success: _userId : {_userId} / _robotId : {_robotId} / _userName : {_userName}");
+                Debug.Log($"[LoginService] Login success: _id : {_id} / _password : {_password}");
+                await AuthenticationService.Instance.SignUpWithUsernamePasswordAsync(_id, _password);
             }
             catch (AuthenticationException)
             {
-                await AuthenticationService.Instance.SignInWithUsernamePasswordAsync(_userId, _robotId);
+                await AuthenticationService.Instance.SignInWithUsernamePasswordAsync(_id, _password);
             }
         }
 
