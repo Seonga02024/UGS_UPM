@@ -39,10 +39,10 @@ public class LoadingLoginAndGetDataUI : MonoBehaviour
             }
         }
 
-        private void OnDisable()
+        private void OnDestroy()
         {
-            playerDataManager.GetDataCompleted -= HandleGetDataCompleted;
-            LoginManager.Instance.LoginCompleted -= HandleGetDataCompleted;
+            if(playerDataManager) playerDataManager.GetDataCompleted -= HandleGetDataCompleted;
+            if(LoginManager.Instance) LoginManager.Instance.LoginCompleted -= HandleGetDataCompleted;
         }
 
         private void HandleGetDataCompleted()

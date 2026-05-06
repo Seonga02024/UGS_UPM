@@ -40,6 +40,7 @@ namespace RoboCare.UGS
         [Header("Optional UI")]
         [SerializeField] private Button cheatButton;
         [SerializeField] private GameObject cheatVersion;
+        [SerializeField] private GameObject backImg;
         [SerializeField] private GameObject updatePanel;
         [SerializeField] private TMP_Text messageText;
         [SerializeField] private TMP_Text detailMessageText;
@@ -57,6 +58,7 @@ namespace RoboCare.UGS
         {
             cheatVersion.SetActive(false);
             updatePanel.SetActive(false);
+            backImg.SetActive(false);
             if (loginService != null)
             {
                 loginService.LoginCompleted += HandleLoginCompleted;
@@ -69,6 +71,7 @@ namespace RoboCare.UGS
                     //PlayClickSound();
                     if (updatePanel != null)
                     {
+                        backImg.SetActive(false);
                         updatePanel.SetActive(false);
                         UpdateCompleted?.Invoke();
                     }
@@ -91,6 +94,7 @@ namespace RoboCare.UGS
 
         private void HandleLoginCompleted()
         {
+            backImg.SetActive(true);
             //#if UNITY_ANDROID && !UNITY_EDITOR
             _ = RunPostLoginDataSyncAsync();
             //#endif
@@ -142,6 +146,7 @@ namespace RoboCare.UGS
             else
             {
                 updatePanel.SetActive(false);
+                backImg.SetActive(false);
             }
         }
 
