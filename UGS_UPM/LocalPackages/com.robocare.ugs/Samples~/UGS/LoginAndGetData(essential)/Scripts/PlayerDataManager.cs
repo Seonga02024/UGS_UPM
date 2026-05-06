@@ -69,9 +69,16 @@ public class PlayerDataManager : MonoBehaviour
         }
     }
 
-    private void HandleLoginCompleted()
+    private async void HandleLoginCompleted()
     {
-        _ = PostLoginSequence();
+        try
+        {
+            await PostLoginSequence();
+        }
+        catch (Exception e)
+        {
+            LogApi.LogError($"[PlayerDataManager] PostLoginSequence failed: {e}");
+        }
     }
 
     private void OnApplicationQuit() => SaveProcess();
@@ -89,9 +96,12 @@ public class PlayerDataManager : MonoBehaviour
     /// <summary> 로그인 성공 후 데이터 로드 시퀀스 </summary>
     private async Task PostLoginSequence()
     {
-        await UpdateCoin();   // 서버에서 코인 정보 수신
-        await LoadPlayerData(); // 클라우드 데이터 수신
+        LogApi.Log("서버에서 재화 데이터 업데이트...");
+        await UpdateLocalCoin();   // 서버에서 코인 정보 수신
+        LogApi.Log("서버에서 플레이어 데이터 업데이트...");
+        await LoadPlayerData(); // 클라우드 데이터 수신 (CurrentPlayerData 생성)
         CurrentPlayerData.name = await AuthenticationService.Instance.GetPlayerNameAsync();
+        LogApi.Log("서버에서 재화 및 플레이어 데이터 업데이트 완료!");
     }
 
     #region [Cloud Save Service]

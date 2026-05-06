@@ -51,12 +51,6 @@ public class QuestUIItem : MonoBehaviour
             QUEST_ID = questId
         };
 
-        if (ServerEventManager.Instance == null)
-        {
-            Debug.LogError("[PlayerDataManager] SendCompleteQuest failed: ServerEventManager.Instance is null.");
-            return;
-        }
-
         DailyQuestManager.Instance.CompleteQuestReward(req, res =>
         {
             if (res == null)

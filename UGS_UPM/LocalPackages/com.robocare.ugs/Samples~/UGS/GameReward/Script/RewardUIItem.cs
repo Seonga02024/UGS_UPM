@@ -40,12 +40,6 @@ public class RewardUIItem : MonoBehaviour
             return;
         }
 
-        if (ServerEventManager.Instance == null)
-        {
-            Debug.LogError("[PlayerDataManager] SendCompleteReward failed: ServerEventManager.Instance is null.");
-            return;
-        }
-
         var req = new CompleteGameRewardRequest
         {
             REWARD_ID = rewardId

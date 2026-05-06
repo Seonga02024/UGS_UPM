@@ -24,6 +24,7 @@ public class StorePanel : MonoBehaviour
         foreach (var item in storeData.items)
         {
             GameObject go = Instantiate(itemPrefab, contentParent);
+            go.transform.position = Vector3.zero;
             StoreItemUI itemUI = go.GetComponent<StoreItemUI>();
 
             // 생성할 때 보유 여부를 확인해서 바로 넘겨줌
