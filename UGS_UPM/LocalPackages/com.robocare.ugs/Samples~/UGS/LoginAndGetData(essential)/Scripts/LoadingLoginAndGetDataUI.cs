@@ -15,6 +15,7 @@ public class LoadingLoginAndGetDataUI : MonoBehaviour
         [SerializeField] private TMP_Text blockPanelText;
         public bool isCheckPlayerData = true;
         private string baseMessage = "데이터 불러오는 중";
+        private static bool alreadyUpdate = false;
         #endregion
 
         private void Start()
@@ -32,12 +33,23 @@ public class LoadingLoginAndGetDataUI : MonoBehaviour
                     LoginManager.Instance.LoginCompleted += HandleGetDataCompleted;
                 }
             }
+
+            if(alreadyUpdate){
+                HandleGetDataCompleted();
+            }
+        }
+
+        private void OnDisable()
+        {
+            playerDataManager.GetDataCompleted -= HandleGetDataCompleted;
+            LoginManager.Instance.LoginCompleted -= HandleGetDataCompleted;
         }
 
         private void HandleGetDataCompleted()
         {
             blockPanel.SetActive(false);
             StopCoroutine(BlockPanelAnimateText());
+            alreadyUpdate = true;
         }
 
         IEnumerator BlockPanelAnimateText()

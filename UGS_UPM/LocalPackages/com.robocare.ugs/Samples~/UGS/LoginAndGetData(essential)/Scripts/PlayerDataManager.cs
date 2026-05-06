@@ -40,13 +40,15 @@ public class PlayerDataManager : MonoBehaviour
     [SerializeField] public static PlayerData CurrentPlayerData;
 
     /// <summary> 데이터가 성공적으로 로드되었는지 확인 </summary>
-    private bool isLoadPlayerData = false;
+    private static bool isLoadPlayerData = false;
     #endregion
     public event Action GetDataCompleted;
     public event Action ChangeNameCompleted;
 
     private void Start()
     {
+        if(isLoadPlayerData) return;
+        
         if (Instance == null)
         {
             Instance = this;
@@ -101,6 +103,7 @@ public class PlayerDataManager : MonoBehaviour
         LogApi.Log("서버에서 플레이어 데이터 업데이트...");
         await LoadPlayerData(); // 클라우드 데이터 수신 (CurrentPlayerData 생성)
         CurrentPlayerData.name = await AuthenticationService.Instance.GetPlayerNameAsync();
+        isLoadPlayerData = true;
         LogApi.Log("서버에서 재화 및 플레이어 데이터 업데이트 완료!");
     }
 
@@ -127,7 +130,6 @@ public class PlayerDataManager : MonoBehaviour
             }
 
             SettingPlayerPrefs(); // 로컬 캐시 갱신
-            isLoadPlayerData = true;
             GetDataCompleted?.Invoke(); // 데이터 로드 완료 
 
             // 개인 재화 업데이트 
