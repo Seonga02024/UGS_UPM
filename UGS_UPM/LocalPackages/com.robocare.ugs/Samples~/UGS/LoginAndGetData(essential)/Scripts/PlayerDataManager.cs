@@ -64,10 +64,6 @@ public class PlayerDataManager : MonoBehaviour
         if (LoginManager.Instance != null)
         {
             LoginManager.Instance.LoginCompleted += HandleLoginCompleted;
-            if (LoginManager.Instance.IsLoggedIn)
-            {
-                HandleLoginCompleted();
-            }
         }
     }
 

@@ -75,6 +75,7 @@ public class LoginTokenReader : MonoBehaviour
     private const float LoginDetectBomiAttemptTimeoutSeconds = 2.5f;
 
     bool lastFailHaveApp = false;
+    public static bool IsFirstAppOpen = true;
 
     private void Start()
     {
@@ -99,8 +100,9 @@ public class LoginTokenReader : MonoBehaviour
             platformSelector.Closed += () => Unblock("selector");
         }
 
-        if (!PlayerPrefs.HasKey(AppLaunchedKey))
+        if (!PlayerPrefs.HasKey(AppLaunchedKey) || IsFirstAppOpen)
         {
+            IsFirstAppOpen = false;
             GetDataAsync().Forget();
         }
     }

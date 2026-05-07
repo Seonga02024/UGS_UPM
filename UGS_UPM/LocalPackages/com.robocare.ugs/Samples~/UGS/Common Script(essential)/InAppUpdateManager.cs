@@ -58,7 +58,7 @@ namespace RoboCare.UGS
         {
             cheatVersion.SetActive(false);
             updatePanel.SetActive(false);
-            backImg.SetActive(false);
+            if(LoginTokenReader.IsFirstAppOpen == false) backImg.SetActive(false);
             if (loginService != null)
             {
                 loginService.LoginCompleted += HandleLoginCompleted;
