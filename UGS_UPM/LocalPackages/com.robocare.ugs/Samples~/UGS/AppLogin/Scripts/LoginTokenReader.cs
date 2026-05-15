@@ -16,7 +16,7 @@ public enum PlatformType
     Others = 3,
 }
 
-public class LoginTokenReader : MonoBehaviour
+public class LoginTokenReader : SingletonBehaviour<LoginTokenReader>
 {
     [Header("Loading Login")]
     [SerializeField] private LoginLoadingPanel loadingPanel;

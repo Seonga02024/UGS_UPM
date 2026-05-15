@@ -94,6 +94,13 @@ namespace RoboCare.UGS
 
         private void HandleLoginCompleted()
         {
+            if (LoginTokenReader.Instance.currentPlatform == PlatformType.BOMI1 || LoginTokenReader.Instance.currentPlatform == PlatformType.BOMI2)
+            {
+                backImg.SetActive(false);
+                cheatVersion.SetActive(false);
+                updatePanel.SetActive(false);
+                return;
+            }
             backImg.SetActive(true);
             //#if UNITY_ANDROID && !UNITY_EDITOR
             _ = RunPostLoginDataSyncAsync();

@@ -19,15 +19,37 @@ namespace RoboCare.UGS
         public bool IsInternetAvailable { get; private set; }
         private const string CheckUrl = "https://clients3.google.com/generate_204";
         private const int TimeoutSec = 3;
+        [SerializeField] private LoginSuccessPanel loginSuccessPanel;
 
-        private void Awake()
+        private void OnEnable()
         {
+            netCheckPanel.SetActive(false);
+            if (loginSuccessPanel != null)
+            {
+                loginSuccessPanel.FinishAppLogin += HandleLoginSuccessPanelFinished;
+            }
+        }
+
+        private void OnDisable()
+        {
+            loginSuccessPanel.FinishAppLogin -= HandleLoginSuccessPanelFinished;
+        }
+
+        private void HandleLoginSuccessPanelFinished()
+        {
+            netCheckPanel.SetActive(true);
             StartCoroutine(CheckInternetNow());
-            quitBtn.onClick.AddListener(() => Application.Quit());
+            quitBtn.onClick.AddListener(() => Application.Quit()); 
         }
 
         private IEnumerator CheckInternetNow()
         {
+            if (LoginTokenReader.Instance.currentPlatform == PlatformType.BOMI1 || LoginTokenReader.Instance.currentPlatform == PlatformType.BOMI2)
+            {
+                netCheckPanel.SetActive(false);
+                yield break;
+            }
+
             // 1) 로컬 네트워크 연결 유무
             if (Application.internetReachability == NetworkReachability.NotReachable)
             {
