@@ -1,4 +1,5 @@
 using System.Collections;
+using TMPro;
 using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.UI;
@@ -13,8 +14,12 @@ namespace RoboCare.UGS
      */
     public class NetCheckManager : MonoBehaviour
     {
+        [SerializeField] private GameObject backPanel;
         [SerializeField] private GameObject netCheckPanel;
         [SerializeField] private Button quitBtn;
+        [SerializeField] private TMP_Text mainText;
+        [SerializeField] private TMP_Text detailText;
+        [SerializeField] private TMP_Text buttonText;
 
         public bool IsInternetAvailable { get; private set; }
         private const string CheckUrl = "https://clients3.google.com/generate_204";
@@ -23,6 +28,7 @@ namespace RoboCare.UGS
 
         private void OnEnable()
         {
+            backPanel.SetActive(false);
             netCheckPanel.SetActive(false);
             if (loginSuccessPanel != null)
             {
@@ -37,15 +43,37 @@ namespace RoboCare.UGS
 
         private void HandleLoginSuccessPanelFinished()
         {
-            netCheckPanel.SetActive(true);
+            backPanel.SetActive(true);
+            netCheckPanel.SetActive(false);
             StartCoroutine(CheckInternetNow());
-            quitBtn.onClick.AddListener(() => Application.Quit()); 
+
+            quitBtn.onClick.RemoveAllListeners();
+#if UNITY_IOS
+            // Apple HIG: iOS 앱은 스스로 종료하지 않는다 → 재시도 버튼으로 동작
+            mainText.text = "인터넷 연결이 필요합니다";
+            detailText.text = "Wi-Fi 또는 셀룰러 데이터 연결을 \n 확인한 후 다시 시도해 주세요.";
+            buttonText.text = "다시 시도";
+            quitBtn.onClick.AddListener(RetryInternetCheck);
+#else
+            mainText.text = "인터넷 연결 상태를 \n 확인해 주세요.";
+            detailText.text = "인터넷이 연결되지 않아 \n 게임을 실행할 수 없습니다.";
+            buttonText.text = "종료하기";
+            quitBtn.onClick.AddListener(() => Application.Quit());
+#endif
         }
+
+#if UNITY_IOS
+        private void RetryInternetCheck()
+        {
+            StartCoroutine(CheckInternetNow());
+        }
+#endif
 
         private IEnumerator CheckInternetNow()
         {
             if (LoginTokenReader.Instance.currentPlatform == PlatformType.BOMI1 || LoginTokenReader.Instance.currentPlatform == PlatformType.BOMI2)
             {
+                backPanel.SetActive(false);
                 netCheckPanel.SetActive(false);
                 yield break;
             }
@@ -54,6 +82,8 @@ namespace RoboCare.UGS
             if (Application.internetReachability == NetworkReachability.NotReachable)
             {
                 IsInternetAvailable = false;
+                backPanel.SetActive(true);
+                netCheckPanel.SetActive(true);
                 LogApi.Log("No network interface reachable.");
                 yield break;
             }
@@ -68,6 +98,7 @@ namespace RoboCare.UGS
                 req.responseCode == 204;
 
             netCheckPanel.SetActive(IsInternetAvailable ? false : true);
+            backPanel.SetActive(IsInternetAvailable ? false : true);
 
             LogApi.Log($"Internet available: {IsInternetAvailable}");
         }
