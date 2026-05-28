@@ -319,6 +319,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 3941445913085181659}
     m_Modifications:
+    - target: {fileID: 1083818394328880278, guid: 38d9b23d759f6fe408a39ee4cdeab883, type: 3}
+      propertyPath: m_hasFontAssetChanged
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 1834590158286432596, guid: 38d9b23d759f6fe408a39ee4cdeab883, type: 3}
       propertyPath: m_Name
       value: ClearReward
@@ -418,6 +422,10 @@ PrefabInstance:
     - target: {fileID: 4118047222926833628, guid: 38d9b23d759f6fe408a39ee4cdeab883, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5101211281357500644, guid: 38d9b23d759f6fe408a39ee4cdeab883, type: 3}
+      propertyPath: m_hasFontAssetChanged
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6424311433508124309, guid: 38d9b23d759f6fe408a39ee4cdeab883, type: 3}
       propertyPath: m_AnchorMax.x

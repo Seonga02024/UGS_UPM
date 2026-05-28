@@ -4,7 +4,8 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
-using Unity.Services.Authentication;
+    using TMPro;
+    using Unity.Services.Authentication;
 using Unity.Services.Core;
 using Unity.Services.Leaderboards;
 using Unity.Services.Leaderboards.Exceptions;
@@ -25,6 +26,7 @@ using UnityEngine.UI;
  */
 public class LeaderboardManager : MonoBehaviour
 {
+    [SerializeField] private GameObject waitinPanel;
     public static LeaderboardManager Instance { get; private set; }
 
     #region [Fields - UI Components]
@@ -33,10 +35,9 @@ public class LeaderboardManager : MonoBehaviour
     [SerializeField] private GameObject rankPanel;
     [SerializeField] private GameObject noRankObject;
     [SerializeField] private Transform rankUserInfoParent;
-    [SerializeField] private GameObject DiamondRankPrefab;
     [SerializeField] private GameObject GoldRankPrefab;
     [SerializeField] private GameObject SliverRankPrefab;
-    [SerializeField] private GameObject BronzeRankPrefab;
+    [SerializeField] private GameObject BronzeRankPrefab; 
 
     [Header("Control Buttons")]
     [SerializeField] private Button rankBtn;
@@ -45,11 +46,17 @@ public class LeaderboardManager : MonoBehaviour
     [SerializeField] private Button playerRangeBtn;
     [SerializeField] private Button prePageBtn;
     [SerializeField] private Button nextPageBtn;
+    
+    [Header("My Rank")]
+    [SerializeField] private GameObject blockPanel;
+    [SerializeField] private Image myRankImg;
+    [SerializeField] private Sprite[] rankImgs;
+    [SerializeField] private TMP_Text _rank, _playerName, _score, _tier;
     #endregion
 
     #region [Fields - Settings]
     private const string leaderboardIdConfigKey = "LeaderBoardID";
-    [SerializeField] private string fallbackLeaderboardId = "Ranking";
+    [SerializeField] private string fallbackLeaderboardId = "Ranking_Win";
     private string leaderboardId;
     private bool isLeaderboardIdLoaded = false;
 
@@ -76,7 +83,6 @@ public class LeaderboardManager : MonoBehaviour
         }
 
         rankPrefabs = new Dictionary<string, GameObject> {
-        { "diamond", DiamondRankPrefab },
         { "gold", GoldRankPrefab },
         { "silver", SliverRankPrefab },
         { "bronze", BronzeRankPrefab }
@@ -122,7 +128,7 @@ public class LeaderboardManager : MonoBehaviour
     /// </summary>
     public async Task GetPlayerScoreOrSubmitDefault()
     {
-        //if (LoginTokenReader.IsCamiLogin == false) return;
+        if (LoginTokenReader.Instance.currentPlatform != PlatformType.CAMI) return;
 
         var currentLeaderboardId = await GetLeaderboardIdAsync();
 
@@ -185,6 +191,7 @@ public class LeaderboardManager : MonoBehaviour
     {
         if (IsWaitLoading) return;
         IsWaitLoading = true;
+        waitinPanel.SetActive(true);
 
         if (page < 0) { page = 0; currentPage = 0; }
 
@@ -196,6 +203,7 @@ public class LeaderboardManager : MonoBehaviour
 
         currentPlayerName = await AuthenticationService.Instance.GetPlayerNameAsync();
         await GetPlayerScoreOrSubmitDefault();
+        await LoadMyRank();
         var currentLeaderboardId = await GetLeaderboardIdAsync();
         RemoveScoresUI();
         noRankObject.SetActive(false);
@@ -209,6 +217,7 @@ public class LeaderboardManager : MonoBehaviour
             {
                 DisplayRankItems(scoresResponse.Results);
                 rankPanel.SetActive(true);
+                waitinPanel.SetActive(false);
                 IsWaitLoading = false;
             }
         }
@@ -247,23 +256,71 @@ public class LeaderboardManager : MonoBehaviour
         DisplayRankItems(response.Results);
     }
 
-    private async Task LoadScore()
+    /// <summary>
+    /// 내 랭크 정보를 가져와 My Rank UI에 표시
+    /// </summary>
+    public async Task LoadMyRank()
     {
+        if (LoginTokenReader.Instance.currentPlatform != PlatformType.CAMI)
+        {
+            blockPanel.SetActive(true);
+            return;
+        }
+
         var currentLeaderboardId = await GetLeaderboardIdAsync();
-        var response = await LeaderboardsService.Instance.GetPlayerScoreAsync(currentLeaderboardId);
-        Debug.Log($"[Leaderboard] 내 정보 - Rank: {response.Rank}, Score: {response.Score}");
+
+        try
+        {
+            var entry = await LeaderboardsService.Instance.GetPlayerScoreAsync(currentLeaderboardId);
+            ApplyMyRankUI(entry);
+        }
+        catch (LeaderboardsException e) when (e.Reason == LeaderboardsExceptionReason.EntryNotFound)
+        {
+            await LeaderboardsService.Instance.AddPlayerScoreAsync(currentLeaderboardId, 0);
+            var entry = await LeaderboardsService.Instance.GetPlayerScoreAsync(currentLeaderboardId);
+            ApplyMyRankUI(entry);
+        }
+    }
+
+    private void ApplyMyRankUI(LeaderboardEntry entry)
+    {
+        if (entry == null) return;
+
+        if (_rank != null)       _rank.text       = (entry.Rank + 1).ToString();
+        if (_playerName != null)
+        {
+            string originalName = entry.PlayerName.Split('#')[0];
+            _playerName.text = originalName.Length > 6
+            ? originalName.Substring(0, 6) + "..."
+            : originalName;
+        }
+        if (_score != null)      _score.text      = entry.Score.ToString();
+        if (_tier != null)       _tier.text       = entry.Tier;
+
+        if (myRankImg != null && rankImgs != null && rankImgs.Length > 0)
+        {
+            int idx = entry.Tier switch
+            {
+                "gold"   => 0,
+                "silver" => 1,
+                _        => 2,
+            };
+            if (idx < rankImgs.Length) myRankImg.sprite = rankImgs[idx];
+        }
+        blockPanel.SetActive(false);
     }
     #endregion
 
     #region [Leaderboard Data - Save]
     public async void UpdateScore(double score)
     {
-        //if (LoginTokenReader.IsCamiLogin == false) return;
+        if (LoginTokenReader.Instance.currentPlatform != PlatformType.CAMI) return;
         await SaveScore(score);
     }
 
     private async Task SaveScore(double score)
     {
+        if (LoginTokenReader.Instance.currentPlatform != PlatformType.CAMI) return;
         var currentLeaderboardId = await GetLeaderboardIdAsync();
         var response = await LeaderboardsService.Instance.AddPlayerScoreAsync(currentLeaderboardId, score);
         Debug.Log($"[Leaderboard] 점수 저장 결과: {JsonConvert.SerializeObject(response)}");
@@ -286,8 +343,8 @@ public class LeaderboardManager : MonoBehaviour
             if (rankItem.TryGetComponent<RankUserInfo>(out var userInfo))
             {
                 userInfo.SetRankUserInfo(entry.Rank + 1, entry.PlayerName, entry.Score, entry.Tier);
-                if (currentPlayerName == entry.PlayerName) userInfo.SetMyInfo(true);
-                else userInfo.SetMyInfo(false);
+                // if (currentPlayerName == entry.PlayerName) userInfo.SetMyInfo(true);
+                // else userInfo.SetMyInfo(false);
 
             }
         }
@@ -297,7 +354,7 @@ public class LeaderboardManager : MonoBehaviour
     private void RemoveScoresUI()
     {
         // 첫 번째 자식(헤더)을 제외하고 나머지 제거
-        for (int i = 1; i < rankUserInfoParent.childCount; i++)
+        for (int i = 0; i < rankUserInfoParent.childCount; i++)
         {
             Destroy(rankUserInfoParent.GetChild(i).gameObject);
         }
@@ -312,9 +369,13 @@ public class LeaderboardManager : MonoBehaviour
         var contentTr = rankUserInfoParent.GetComponent<RectTransform>();
         contentTr.sizeDelta = new Vector2(contentTr.sizeDelta.x, calculatedHeight);
     }
+    
+    public void OnButton(bool isActive){
+        rankBtn.gameObject.SetActive(isActive);
+    }
     #endregion
 
-    private struct UserAttributes { }
+        private struct UserAttributes { }
     private struct AppAttributes { }
 }
 
