@@ -411,7 +411,7 @@ public class PlayerDataManager : MonoBehaviour
         CurrentPlayerData.DateOfExit = PlayerPrefs.GetString("DateOfExit", "");
         CurrentPlayerData.OpenLevel = PlayerPrefs.GetInt("OpenLevel", 1);
         CurrentPlayerData.Rated = PlayerPrefs.GetInt("Rated", 0);
-        CurrentPlayerData.GameCoin = PlayerPrefs.GetInt("GameCoin", 0);
+        CurrentPlayerData.GameCoin = PlayerPrefs.GetInt("GameCoin", 0); 
 
         // JSON 데이터 복원
             if (PlayerPrefs.HasKey("UserQuestStatus"))
