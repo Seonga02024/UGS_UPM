@@ -16,13 +16,14 @@ public class LoadingLoginAndGetDataUI : MonoBehaviour
         public bool isCheckPlayerData = true;
         private string baseMessage = "데이터 불러오는 중";
         private static bool alreadyUpdate = false;
+        private Coroutine _animateRoutine;
         #endregion
 
         private void Start()
         {
             blockPanel.SetActive(true);
             blockPanelText.text = baseMessage;
-            StartCoroutine(BlockPanelAnimateText());
+            _animateRoutine = StartCoroutine(BlockPanelAnimateText());
             if (playerDataManager != null)
             {
                 playerDataManager.GetDataCompleted += HandleGetDataCompleted;
@@ -47,9 +48,54 @@ public class LoadingLoginAndGetDataUI : MonoBehaviour
 
         private void HandleGetDataCompleted()
         {
-            blockPanel.SetActive(false);
-            StopCoroutine(BlockPanelAnimateText());
-            alreadyUpdate = true;
+            HideBlockPanel(true);
+        }
+
+        public void HideForNetworkError()
+        {
+            HideBlockPanel(false);
+        }
+
+        public void ShowForRetry()
+        {
+            if (alreadyUpdate)
+            {
+                return;
+            }
+
+            if (blockPanel != null)
+            {
+                blockPanel.SetActive(true);
+            }
+
+            if (blockPanelText != null)
+            {
+                blockPanelText.text = baseMessage;
+            }
+
+            if (_animateRoutine == null)
+            {
+                _animateRoutine = StartCoroutine(BlockPanelAnimateText());
+            }
+        }
+
+        private void HideBlockPanel(bool markCompleted)
+        {
+            if (blockPanel != null)
+            {
+                blockPanel.SetActive(false);
+            }
+
+            if (_animateRoutine != null)
+            {
+                StopCoroutine(_animateRoutine);
+                _animateRoutine = null;
+            }
+
+            if (markCompleted)
+            {
+                alreadyUpdate = true;
+            }
         }
 
         IEnumerator BlockPanelAnimateText()

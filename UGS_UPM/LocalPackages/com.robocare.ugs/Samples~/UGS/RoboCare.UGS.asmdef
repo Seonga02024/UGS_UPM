@@ -3,6 +3,7 @@
   "rootNamespace": "RoboCare.UGS",
   "references": [
     "UniTask",
+    "BestHTTP",
     "Unity.Services.Core",
     "Unity.Services.Authentication",
     "Unity.Services.CloudCode",

@@ -19,6 +19,8 @@ namespace RoboCare.UGS
     // Canvas InAppUpdateUI Prefab 에 붙이기 
    public class InAppUpdateManager : MonoBehaviour
     {
+        private const string BomphagoIOSStoreUrl = "https://apps.apple.com/app/id6764503478";
+
         [SerializeField] private LoginManager loginService;
 
         [Header("Remote Config Keys")]
@@ -33,7 +35,7 @@ namespace RoboCare.UGS
         [SerializeField] private int fallbackMinimumBundleCode = 0;
         [SerializeField] private string fallbackMinimumVersion = "1.0.0";
         [SerializeField] private string fallbackMessage = "A new update is required.";
-        [SerializeField] private string fallbackStoreUrl = "market://details?id=com.robocare.smartbot";
+        [SerializeField] private string fallbackStoreUrl = "market://details?id=com.robocare.bomphago";
         [SerializeField] private bool fallbackCanPassUpdate = true;
         [SerializeField] private string fallbackDetailMessage = "저희 앱을 이용해주시는 사용자님께 \n진심으로 감사드립니다. 더 나은 서비스를 \n위하여 앱을 업데이트 하시길 바랍니다. \n감사합니다.";
 
@@ -53,6 +55,9 @@ namespace RoboCare.UGS
         private bool _canPassUpdate;
         public event Action UpdateCompleted;
         private int cheatNum = 0;
+#if UNITY_IOS && !UNITY_EDITOR
+        private const int RemoteConfigOperationTimeoutMs = 5000;
+#endif
 
         private void Start()
         {
@@ -122,8 +127,15 @@ namespace RoboCare.UGS
 
             try
             {
+#if UNITY_IOS && !UNITY_EDITOR
+                Debug.Log($"[InAppUpdate] UGS ready check start. timeoutMs:{RemoteConfigOperationTimeoutMs}");
+                await WithTimeout(EnsureUgsReadyAsync(), RemoteConfigOperationTimeoutMs, "UGS ready for Remote Config");
+                Debug.Log($"[InAppUpdate] Remote Config fetch start. timeoutMs:{RemoteConfigOperationTimeoutMs}");
+                await WithTimeout(RemoteConfigService.Instance.FetchConfigsAsync(new UserAttributes(), new AppAttributes()), RemoteConfigOperationTimeoutMs, "Remote Config fetch");
+#else
                 await EnsureUgsReadyAsync();
                 await RemoteConfigService.Instance.FetchConfigsAsync(new UserAttributes(), new AppAttributes());
+#endif
 
                 minimumBundleCode = (int)RemoteConfigService.Instance.appConfig.GetInt(minimumBundleCodeKey, fallbackMinimumBundleCode);
                 minimumVersionCode = RemoteConfigService.Instance.appConfig.GetString(minimumVersionKey, fallbackMinimumVersion);
@@ -137,12 +149,13 @@ namespace RoboCare.UGS
                 Debug.LogWarning("[InAppUpdate] Remote Config fetch failed. fallback values will be used. " + e.Message);
             }
 
-            var installedBundleCode = GetAndroidVersionCode();
+            var installedBundleCode = GetInstalledBundleCode();
             string currentVersion = Application.version;
             UpdateBundleCodeTexts(minimumBundleCode, installedBundleCode);
             UpdateVersionTexts(minimumVersionCode, currentVersion);
             Debug.Log(string.Format(
-                "[InAppUpdate] installedBundleCode={0}, minimumBundleCode={1}",
+                "[InAppUpdate] platform={0}, installedBundleCode={1}, minimumBundleCode={2}",
+                Application.platform,
                 installedBundleCode,
                 minimumBundleCode));
 
@@ -161,14 +174,41 @@ namespace RoboCare.UGS
         {
             if (UnityServices.State == ServicesInitializationState.Uninitialized)
             {
+#if UNITY_IOS && !UNITY_EDITOR
+                await WithTimeout(UnityServices.InitializeAsync(), RemoteConfigOperationTimeoutMs, "Unity Services initialize for Remote Config");
+#else
                 await UnityServices.InitializeAsync();
+#endif
             }
 
             if (!AuthenticationService.Instance.IsSignedIn)
             {
+#if UNITY_IOS && !UNITY_EDITOR
+                await WithTimeout(AuthenticationService.Instance.SignInAnonymouslyAsync(), RemoteConfigOperationTimeoutMs, "UGS anonymous sign-in for Remote Config");
+#else
                 await AuthenticationService.Instance.SignInAnonymouslyAsync();
+#endif
             }
         }
+
+#if UNITY_IOS && !UNITY_EDITOR
+        private static async Task WithTimeout(Task task, int timeoutMs, string operationName)
+        {
+            var completedTask = await Task.WhenAny(task, Task.Delay(timeoutMs));
+            if (completedTask != task)
+            {
+                ObserveFault(task);
+                throw new TimeoutException($"{operationName} timed out after {timeoutMs}ms.");
+            }
+
+            await task;
+        }
+
+        private static void ObserveFault(Task task)
+        {
+            task.ContinueWith(t => { var _ = t.Exception; }, TaskContinuationOptions.OnlyOnFaulted);
+        }
+#endif
 
         private void ShowUpdateUi(string message, string detailMessage, string storeUrl)
         {
@@ -201,8 +241,32 @@ namespace RoboCare.UGS
 
         private void OpenStore(string configuredStoreUrl)
         {
-            var url = string.IsNullOrEmpty(configuredStoreUrl) ? fallbackStoreUrl : configuredStoreUrl;
+            var url = ResolveStoreUrl(configuredStoreUrl);
+            if (string.IsNullOrEmpty(url))
+            {
+                Debug.LogWarning("[InAppUpdate] Store URL is empty.");
+                return;
+            }
+
             Application.OpenURL(url);
+        }
+
+        private string ResolveStoreUrl(string configuredStoreUrl)
+        {
+            var url = string.IsNullOrEmpty(configuredStoreUrl) ? fallbackStoreUrl : configuredStoreUrl;
+#if UNITY_IOS && !UNITY_EDITOR
+            if (string.IsNullOrEmpty(url) || IsAndroidStoreUrl(url))
+                return BomphagoIOSStoreUrl;
+#endif
+            return url;
+        }
+
+        private static bool IsAndroidStoreUrl(string url)
+        {
+            if (string.IsNullOrEmpty(url)) return false;
+
+            return url.StartsWith("market://", StringComparison.OrdinalIgnoreCase)
+                   || url.IndexOf("play.google.com/store/apps/details", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         private void UpdateBundleCodeTexts(int minimumBundleCode, int currentBundleCode)
@@ -233,7 +297,7 @@ namespace RoboCare.UGS
             }
         }
 
-        private int GetAndroidVersionCode()
+        private int GetInstalledBundleCode()
         {
 #if UNITY_ANDROID && !UNITY_EDITOR
         try
@@ -254,6 +318,15 @@ namespace RoboCare.UGS
             Debug.LogWarning("[InAppUpdate] versionCode read failed: " + e.Message);
             return 0;
         }
+#elif UNITY_IOS && !UNITY_EDITOR
+            var buildNumber = global::BuildInfo.GetIOSBuildNumber();
+            if (int.TryParse(buildNumber, out var parsed))
+            {
+                return parsed;
+            }
+
+            Debug.LogWarning("[InAppUpdate] iOS CFBundleVersion parse failed: " + buildNumber);
+            return 0;
 #else
             return 0;
 #endif

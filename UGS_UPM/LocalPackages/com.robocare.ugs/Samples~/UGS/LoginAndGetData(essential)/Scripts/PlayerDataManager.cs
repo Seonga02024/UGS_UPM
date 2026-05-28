@@ -41,8 +41,12 @@ public class PlayerDataManager : MonoBehaviour
 
     /// <summary> 데이터가 성공적으로 로드되었는지 확인 </summary>
     private static bool isLoadPlayerData = false;
+    private bool _isLoadingPlayerData;
     #endregion
+    public bool IsPlayerDataLoaded => isLoadPlayerData;
+    public bool IsLoadingPlayerData => _isLoadingPlayerData;
     public event Action GetDataCompleted;
+    public event Action<string> GetDataFailed;
     public event Action ChangeNameCompleted;
 
     private void Start()
@@ -59,16 +63,46 @@ public class PlayerDataManager : MonoBehaviour
             Destroy(gameObject);
         }
 
-        // 초기화 시 데이터 비우기
+       // 초기화 시 데이터 비우기
         CurrentPlayerData = null;
-        if (LoginManager.Instance != null)
+        if (loginManager == null)
         {
-            LoginManager.Instance.LoginCompleted += HandleLoginCompleted;
+            loginManager = LoginManager.Instance;
+        }
+
+        if (loginManager != null)
+        {
+            loginManager.LoginCompleted += HandleLoginCompleted;
         }
     }
 
-    private async void HandleLoginCompleted()
+    private void OnDestroy()
     {
+        if (Instance == this)
+        {
+            Instance = null;
+        }
+
+        if (loginManager != null)
+        {
+            loginManager.LoginCompleted -= HandleLoginCompleted;
+        }
+    }
+
+    private void HandleLoginCompleted()
+    {
+        _ = RetryPostLoginSequenceAsync();
+    }
+
+    public async Task RetryPostLoginSequenceAsync()
+    {
+        if (isLoadPlayerData || _isLoadingPlayerData)
+        {
+            return;
+        }
+
+        _isLoadingPlayerData = true;
+
         try
         {
             await PostLoginSequence();
@@ -76,6 +110,11 @@ public class PlayerDataManager : MonoBehaviour
         catch (Exception e)
         {
             LogApi.LogError($"[PlayerDataManager] PostLoginSequence failed: {e}");
+            GetDataFailed?.Invoke(e.Message);
+        }
+        finally
+        {
+            _isLoadingPlayerData = false;
         }
     }
 

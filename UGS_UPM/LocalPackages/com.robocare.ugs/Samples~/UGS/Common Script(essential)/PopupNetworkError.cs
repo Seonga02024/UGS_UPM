@@ -50,7 +50,7 @@ namespace RoboCare.UGS
                 LogApi.LogError($"[NetworkErrorPopup] WiFi 설정 열기 실패: {e.Message}");
             }
     #elif UNITY_IOS && !UNITY_EDITOR
-            Application.OpenURL("App-Prefs:root=WIFI");
+            LogApi.LogWarning("[NetworkErrorPopup] iOS: 네트워크 설정 앱 직접 이동은 사용하지 않습니다. 사용자가 제어센터/설정에서 연결을 확인해야 합니다.");
     #else
             Debug.Log("[NetworkErrorPopup] Editor: 네트워크 설정 열기 시뮬레이션");
     #endif
@@ -60,7 +60,9 @@ namespace RoboCare.UGS
         void on_click_close()
         {
             gameObject.SetActive(false);
+#if !UNITY_IOS || UNITY_EDITOR
             Application.Quit();
+#endif
         }
     }
 }

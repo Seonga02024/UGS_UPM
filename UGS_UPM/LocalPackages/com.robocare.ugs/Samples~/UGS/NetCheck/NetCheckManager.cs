@@ -8,28 +8,37 @@ namespace RoboCare.UGS
 {
     /*
      * 사용 방법:
-     * 1) netCheckPanel(네트워크 경고 UI)과 quitBtn을 인스펙터에 연결합니다.
-     * 2) Awake에서 인터넷 연결 체크를 즉시 수행하고 결과에 따라 패널 표시를 제어합니다.
-     * 3) 필요 시 주기 체크 코루틴을 추가해 실시간 상태 감시로 확장할 수 있습니다.
+     * 1) backPanel(어두운 배경)과 netCheckPanel(재시도 팝업)을 인스펙터에 연결합니다.
+     * 2) 로그인/데이터 로드 실패 이벤트에서 네트워크 경고 UI를 표시합니다.
+     * 3) iOS 비행기 모드는 FinishAppLogin 직후 즉시 감지해 실패 이벤트 대기 없이 표시합니다.
      */
     public class NetCheckManager : MonoBehaviour
     {
+        [Tooltip("Full-screen dim/background panel. Prefab object: updatePanel.")]
         [SerializeField] private GameObject backPanel;
+        [Tooltip("Retry popup panel. Prefab object: backgroundImg.")]
         [SerializeField] private GameObject netCheckPanel;
         [SerializeField] private Button quitBtn;
         [SerializeField] private TMP_Text mainText;
         [SerializeField] private TMP_Text detailText;
         [SerializeField] private TMP_Text buttonText;
+        [SerializeField] private LoginManager loginManager;
+        [SerializeField] private PlayerDataManager playerDataManager;
 
         public bool IsInternetAvailable { get; private set; }
         private const string CheckUrl = "https://clients3.google.com/generate_204";
         private const int TimeoutSec = 3;
         [SerializeField] private LoginSuccessPanel loginSuccessPanel;
+        private Coroutine _internetCheckRoutine;
+        private LoginManager _subscribedLoginManager;
+        private PlayerDataManager _subscribedPlayerDataManager;
+        public bool isCheckPlayerData = true;
 
         private void OnEnable()
         {
             backPanel.SetActive(false);
             netCheckPanel.SetActive(false);
+            SubscribeFailureEvents();
             if (loginSuccessPanel != null)
             {
                 loginSuccessPanel.FinishAppLogin += HandleLoginSuccessPanelFinished;
@@ -38,14 +47,19 @@ namespace RoboCare.UGS
 
         private void OnDisable()
         {
-            loginSuccessPanel.FinishAppLogin -= HandleLoginSuccessPanelFinished;
+            if (loginSuccessPanel != null)
+            {
+                loginSuccessPanel.FinishAppLogin -= HandleLoginSuccessPanelFinished;
+            }
+
+            UnsubscribeFailureEvents();
         }
 
         private void HandleLoginSuccessPanelFinished()
         {
-            backPanel.SetActive(true);
+            SubscribeFailureEvents();
+            backPanel.SetActive(false);
             netCheckPanel.SetActive(false);
-            StartCoroutine(CheckInternetNow());
 
             quitBtn.onClick.RemoveAllListeners();
 #if UNITY_IOS
@@ -54,6 +68,14 @@ namespace RoboCare.UGS
             detailText.text = "Wi-Fi 또는 셀룰러 데이터 연결을 \n 확인한 후 다시 시도해 주세요.";
             buttonText.text = "다시 시도";
             quitBtn.onClick.AddListener(RetryInternetCheck);
+
+            if (Application.internetReachability == NetworkReachability.NotReachable)
+            {
+                IsInternetAvailable = false;
+                LogApi.LogWarning("[NetCheckManager] iOS network interface not reachable after FinishAppLogin. show retry panel.");
+                ShowNetworkErrorPanel();
+                return;
+            }
 #else
             mainText.text = "인터넷 연결 상태를 \n 확인해 주세요.";
             detailText.text = "인터넷이 연결되지 않아 \n 게임을 실행할 수 없습니다.";
@@ -65,16 +87,29 @@ namespace RoboCare.UGS
 #if UNITY_IOS
         private void RetryInternetCheck()
         {
-            StartCoroutine(CheckInternetNow());
+            StartInternetCheck(true);
         }
 #endif
 
-        private IEnumerator CheckInternetNow()
+        private void StartInternetCheck(bool retryLoginOnSuccess)
         {
-            if (LoginTokenReader.Instance.currentPlatform == PlatformType.BOMI1 || LoginTokenReader.Instance.currentPlatform == PlatformType.BOMI2)
+            if (_internetCheckRoutine != null)
+            {
+                StopCoroutine(_internetCheckRoutine);
+            }
+
+            _internetCheckRoutine = StartCoroutine(CheckInternetNow(retryLoginOnSuccess));
+        }
+
+        private IEnumerator CheckInternetNow(bool retryLoginOnSuccess)
+        {
+            var loginTokenReader = LoginTokenReader.Instance;
+            if (loginTokenReader != null &&
+                (loginTokenReader.currentPlatform == PlatformType.BOMI1 || loginTokenReader.currentPlatform == PlatformType.BOMI2))
             {
                 backPanel.SetActive(false);
                 netCheckPanel.SetActive(false);
+                _internetCheckRoutine = null;
                 yield break;
             }
 
@@ -82,9 +117,9 @@ namespace RoboCare.UGS
             if (Application.internetReachability == NetworkReachability.NotReachable)
             {
                 IsInternetAvailable = false;
-                backPanel.SetActive(true);
-                netCheckPanel.SetActive(true);
+                ShowNetworkErrorPanel();
                 LogApi.Log("No network interface reachable.");
+                _internetCheckRoutine = null;
                 yield break;
             }
 
@@ -97,10 +132,151 @@ namespace RoboCare.UGS
                 req.result == UnityWebRequest.Result.Success &&
                 req.responseCode == 204;
 
-            netCheckPanel.SetActive(IsInternetAvailable ? false : true);
-            backPanel.SetActive(IsInternetAvailable ? false : true);
+            if (IsInternetAvailable)
+            {
+                netCheckPanel.SetActive(false);
+                backPanel.SetActive(false);
+
+                if (retryLoginOnSuccess)
+                {
+                    RetryLoginSequence();
+                }
+            }
+            else
+            {
+                ShowNetworkErrorPanel();
+            }
 
             LogApi.Log($"Internet available: {IsInternetAvailable}");
+            _internetCheckRoutine = null;
+        }
+
+        private void HandleLoginFailed(string message)
+        {
+            LogApi.LogWarning("[NetCheckManager] Login failed. show retry panel. " + message);
+            ShowNetworkErrorPanel();
+        }
+
+        private void HandlePlayerDataFailed(string message)
+        {
+            LogApi.LogWarning("[NetCheckManager] Player data load failed. show retry panel. " + message);
+            ShowNetworkErrorPanel();
+        }
+
+        private void RetryLoginSequence()
+        {
+            ShowLoadingPanelsForRetry();
+            SubscribeFailureEvents();
+
+            if (loginManager == null)
+            {
+                LogApi.LogWarning("[NetCheckManager] LoginManager not found for retry.");
+                ShowNetworkErrorPanel();
+                return;
+            }
+
+            if (!loginManager.IsLoggedIn)
+            {
+                _ = loginManager.LoginCloudAsync(true);
+                return;
+            }
+
+            if (isCheckPlayerData && playerDataManager != null && !playerDataManager.IsPlayerDataLoaded)
+            {
+                _ = playerDataManager.RetryPostLoginSequenceAsync();
+                return;
+            }
+
+            HideLoadingPanelsForNetworkError();
+        }
+
+        private void ShowNetworkErrorPanel()
+        {
+            HideLoadingPanelsForNetworkError();
+            backPanel.SetActive(true);
+            netCheckPanel.SetActive(true);
+            transform.SetAsLastSibling();
+            backPanel.transform.SetAsLastSibling();
+            netCheckPanel.transform.SetAsLastSibling();
+        }
+
+        private static void HideLoadingPanelsForNetworkError()
+        {
+            var loadingPanels = FindObjectsByType<LoadingLoginAndGetDataUI>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            foreach (var loadingPanel in loadingPanels)
+            {
+                loadingPanel.HideForNetworkError();
+            }
+        }
+
+        private static void ShowLoadingPanelsForRetry()
+        {
+            var loadingPanels = FindObjectsByType<LoadingLoginAndGetDataUI>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            foreach (var loadingPanel in loadingPanels)
+            {
+                loadingPanel.ShowForRetry();
+            }
+        }
+
+        private void SubscribeFailureEvents()
+        {
+            ResolveManagers();
+
+            if (_subscribedLoginManager != loginManager)
+            {
+                if (_subscribedLoginManager != null)
+                {
+                    _subscribedLoginManager.LoginFailed -= HandleLoginFailed;
+                }
+
+                _subscribedLoginManager = loginManager;
+                if (_subscribedLoginManager != null)
+                {
+                    _subscribedLoginManager.LoginFailed += HandleLoginFailed;
+                }
+            }
+
+            if (isCheckPlayerData && _subscribedPlayerDataManager != playerDataManager)
+            {
+                if (_subscribedPlayerDataManager != null)
+                {
+                    _subscribedPlayerDataManager.GetDataFailed -= HandlePlayerDataFailed;
+                }
+
+                _subscribedPlayerDataManager = playerDataManager;
+                if (_subscribedPlayerDataManager != null)
+                {
+                    _subscribedPlayerDataManager.GetDataFailed += HandlePlayerDataFailed;
+                }
+            }
+        }
+
+        private void UnsubscribeFailureEvents()
+        {
+            if (_subscribedLoginManager != null)
+            {
+                _subscribedLoginManager.LoginFailed -= HandleLoginFailed;
+                _subscribedLoginManager = null;
+            }
+
+            if (isCheckPlayerData && _subscribedPlayerDataManager != null)
+            {
+                _subscribedPlayerDataManager.GetDataFailed -= HandlePlayerDataFailed;
+                _subscribedPlayerDataManager = null;
+            }
+        }
+
+        private void ResolveManagers()
+        {
+            if (loginManager == null)
+            {
+                loginManager = LoginManager.Instance;
+            }
+
+            if (isCheckPlayerData && playerDataManager == null)
+            {
+                playerDataManager = PlayerDataManager.Instance;
+            }
         }
     }
 }

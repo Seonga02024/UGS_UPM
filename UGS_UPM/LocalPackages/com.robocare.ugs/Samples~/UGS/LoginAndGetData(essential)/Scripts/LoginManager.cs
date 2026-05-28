@@ -17,11 +17,21 @@ public class LoginManager : MonoBehaviour
     {
         public static LoginManager Instance { get; private set; }
 
-        //[SerializeField] private LoginSuccessPanel loginSuccessPanel;
-        //[SerializeField] private LoginTokenReader loginTokenReader;
+        [SerializeField] private LoginSuccessPanel loginSuccessPanel;
+        [SerializeField] private LoginTokenReader loginTokenReader;
         public bool IsLoggedIn { get; private set; }
+        public bool IsLoggingIn => _isLoggingIn;
         public string PlayerId => AuthenticationService.Instance.PlayerId;
         public event Action LoginCompleted;
+        public event Action<string> LoginFailed;
+        private const int InitialLoginDelayMs = 3000;
+        private const int LoginOperationTimeoutMs = 12000;
+#if UNITY_IOS && !UNITY_EDITOR
+        private const int IOSInitialLoginDelayMs = 0;
+        private const int IOSLoginOperationTimeoutMs = 5000;
+        private const int IOSLoginTotalTimeoutMs = 11000;
+#endif
+        private const int ServicesInitializationPollMs = 250;
         private bool _isInitialized;
         private bool _isLoggingIn = false;
         private string _userId = "";
@@ -40,14 +50,26 @@ public class LoginManager : MonoBehaviour
             else
             {
                 Destroy(gameObject);
+                return;
             }
 
-            // if (loginSuccessPanel != null)
-            // {
-            //     loginSuccessPanel.FinishAppLogin += HandleLoginSuccessPanelFinished;
-            // }
+            if (loginSuccessPanel != null)
+            {
+                loginSuccessPanel.FinishAppLogin += HandleLoginSuccessPanelFinished;
+            }
+        }
 
-            HandleLoginSuccessPanelFinished();
+        private void OnDestroy()
+        {
+            if (Instance == this)
+            {
+                Instance = null;
+            }
+
+            if (loginSuccessPanel != null)
+            {
+                loginSuccessPanel.FinishAppLogin -= HandleLoginSuccessPanelFinished;
+            }
         }
 
         private void HandleLoginSuccessPanelFinished()
@@ -55,12 +77,11 @@ public class LoginManager : MonoBehaviour
             _ = LoginCloudAsync();
         }
 
-        public async Task LoginCloudAsync()
+        public async Task LoginCloudAsync(bool skipInitialDelay = false)
         {
-            await Task.Delay(3000); // 밀리초
-            LogApi.Log($"[LoginService] LoginCloudAsync Loading...");
             if (_isLoggingIn)
             {
+                LogApi.LogWarning("[LoginService] Login already in progress.");
                 return;
             }
 
@@ -68,24 +89,20 @@ public class LoginManager : MonoBehaviour
 
             try
             {
-                await EnsureServicesInitializedAsync();
-
-                if (ShouldUseCamiLogin())
+                var delayMs = skipInitialDelay ? 0 : GetInitialLoginDelayMs();
+                if (delayMs > 0)
                 {
-                    await LoginWithCamiAsync();
-                }
-                else
-                {
-                    await LoginAnonymouslyAsync();
+                    await Task.Delay(delayMs);
                 }
 
-                IsLoggedIn = true;
-                LoginCompleted?.Invoke();
-                LogApi.Log($"[LoginService] LoginCompleted Invoke");
+                LogApi.Log($"[LoginService] LoginCloudAsync start. timeoutMs:{GetLoginTotalTimeoutMs()}");
+                await WithTimeout(LoginCloudCoreAsync(), GetLoginTotalTimeoutMs(), "UGS login sequence");
             }
             catch (Exception exception)
             {
+                IsLoggedIn = ReadAuthenticationSignedInState();
                 LogApi.LogError($"[LoginService] Login failed: {exception.Message}");
+                LoginFailed?.Invoke(exception.Message);
             }
             finally
             {
@@ -93,21 +110,79 @@ public class LoginManager : MonoBehaviour
             }
         }
 
+        private async Task LoginCloudCoreAsync()
+        {
+            if (Application.internetReachability == NetworkReachability.NotReachable)
+            {
+                throw new InvalidOperationException("No network interface reachable.");
+            }
+
+            await EnsureServicesInitializedAsync();
+
+            if (AuthenticationService.Instance.IsSignedIn)
+            {
+                LogApi.Log("[LoginService] Existing UGS session detected.");
+            }
+            else if (ShouldUseCamiLogin())
+            {
+                await LoginWithCamiAsync();
+            }
+            else
+            {
+                await LoginAnonymouslyAsync();
+            }
+
+            IsLoggedIn = true;
+            LoginCompleted?.Invoke();
+            LogApi.Log($"[LoginService] LoginCompleted Invoke");
+        }
+
         private bool ShouldUseCamiLogin()
         {
-            return false;
-            //return loginTokenReader != null && loginTokenReader.currentPlatform == PlatformType.CAMI;
+            return loginTokenReader != null && loginTokenReader.currentPlatform == PlatformType.CAMI;
         }
 
         private async Task EnsureServicesInitializedAsync()
         {
-            if (_isInitialized)
+            if (_isInitialized || UnityServices.State == ServicesInitializationState.Initialized)
             {
+                _isInitialized = true;
                 return;
             }
 
-            await UnityServices.InitializeAsync();
+            if (UnityServices.State == ServicesInitializationState.Initializing)
+            {
+                await WaitForServicesInitializationAsync();
+                _isInitialized = true;
+                return;
+            }
+
+            LogApi.Log($"[LoginService] Unity Services initialize start. timeoutMs:{GetLoginOperationTimeoutMs()}");
+            await WithTimeout(UnityServices.InitializeAsync(), GetLoginOperationTimeoutMs(), "Unity Services initialize");
+            LogApi.Log("[LoginService] Unity Services initialize completed.");
             _isInitialized = true;
+        }
+
+        private static async Task WaitForServicesInitializationAsync()
+        {
+            var remainingMs = GetLoginOperationTimeoutMs();
+            while (remainingMs > 0)
+            {
+                if (UnityServices.State == ServicesInitializationState.Initialized)
+                {
+                    return;
+                }
+
+                if (UnityServices.State == ServicesInitializationState.Uninitialized)
+                {
+                    break;
+                }
+
+                await Task.Delay(ServicesInitializationPollMs);
+                remainingMs -= ServicesInitializationPollMs;
+            }
+
+            throw new TimeoutException("Unity Services initialize timed out while another initialization was in progress.");
         }
 
         private async Task LoginWithCamiAsync()
@@ -120,18 +195,75 @@ public class LoginManager : MonoBehaviour
             try
             {
                 Debug.Log($"[LoginService] Login success: _id : {_id} / _password : {_password}");
-                await AuthenticationService.Instance.SignUpWithUsernamePasswordAsync(_id, _password);
+                await WithTimeout(AuthenticationService.Instance.SignUpWithUsernamePasswordAsync(_id, _password), GetLoginOperationTimeoutMs(), "UGS CAMI sign-up");
             }
             catch (AuthenticationException)
             {
-                await AuthenticationService.Instance.SignInWithUsernamePasswordAsync(_id, _password);
+                await WithTimeout(AuthenticationService.Instance.SignInWithUsernamePasswordAsync(_id, _password), GetLoginOperationTimeoutMs(), "UGS CAMI sign-in");
             }
         }
 
         private static async Task LoginAnonymouslyAsync()
         {
-            await AuthenticationService.Instance.SignInAnonymouslyAsync();
+            LogApi.Log($"[LoginService] Anonymous sign-in start. timeoutMs:{GetLoginOperationTimeoutMs()}");
+            await WithTimeout(AuthenticationService.Instance.SignInAnonymouslyAsync(), GetLoginOperationTimeoutMs(), "UGS anonymous login");
             LogApi.Log("[LoginService] Login success: Anonymous login");
+        }
+
+        private static int GetInitialLoginDelayMs()
+        {
+#if UNITY_IOS && !UNITY_EDITOR
+            return IOSInitialLoginDelayMs;
+#else
+            return InitialLoginDelayMs;
+#endif
+        }
+
+        private static int GetLoginOperationTimeoutMs()
+        {
+#if UNITY_IOS && !UNITY_EDITOR
+            return IOSLoginOperationTimeoutMs;
+#else
+            return LoginOperationTimeoutMs;
+#endif
+        }
+
+        private static int GetLoginTotalTimeoutMs()
+        {
+#if UNITY_IOS && !UNITY_EDITOR
+            return IOSLoginTotalTimeoutMs;
+#else
+            return InitialLoginDelayMs + (LoginOperationTimeoutMs * 2);
+#endif
+        }
+
+        private static bool ReadAuthenticationSignedInState()
+        {
+            try
+            {
+                return AuthenticationService.Instance.IsSignedIn;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static async Task WithTimeout(Task task, int timeoutMs, string operationName)
+        {
+            var completedTask = await Task.WhenAny(task, Task.Delay(timeoutMs));
+            if (completedTask != task)
+            {
+                ObserveFault(task);
+                throw new TimeoutException($"{operationName} timed out after {timeoutMs}ms.");
+            }
+
+            await task;
+        }
+
+        private static void ObserveFault(Task task)
+        {
+            task.ContinueWith(t => { var _ = t.Exception; }, TaskContinuationOptions.OnlyOnFaulted);
         }
     }
 }
