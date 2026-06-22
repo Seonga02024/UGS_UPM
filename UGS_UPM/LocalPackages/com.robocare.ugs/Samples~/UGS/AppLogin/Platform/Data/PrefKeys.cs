@@ -51,6 +51,14 @@ public static class PrefKeys
     public const string VolumeSfx = "volume.sfx";
     public const string VolumeTts = "volume.tts";
     public const string IsMuted   = "volume.isMuted";
+    // ── Audio Legacy ──
+    public const string MusicOnLegacy      = "music_on";
+    public const string SoundOnLegacy      = "sound_on";
+    public const string SoundOffLegacy     = "sound_off";
+    public const string MasterVolumeLegacy = "master_volume";
+    public const string MusicVolumeLegacy  = "music_volume";
+    public const string SoundVolumeLegacy  = "sound_volume";
+    public const string SfxVolumeLegacy    = "sfx_volume";
 
     // ── Audio ──
     public const string SelectedBgm = "audio.selectedBgm";

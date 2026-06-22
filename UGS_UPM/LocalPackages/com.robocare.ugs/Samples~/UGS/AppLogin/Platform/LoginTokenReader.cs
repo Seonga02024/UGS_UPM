@@ -33,7 +33,7 @@ public class LoginTokenReader : SingletonBehaviour<LoginTokenReader>
     [SerializeField] private Button secretBtn2;
 
     [Header("Tos Panel")]
-    [SerializeField] private TermsGate tosPanel;
+    [SerializeField] private SimpleTermsPanelController tosPanel;
 
     [Header("Blocker")]
     public GameObject blocker;
