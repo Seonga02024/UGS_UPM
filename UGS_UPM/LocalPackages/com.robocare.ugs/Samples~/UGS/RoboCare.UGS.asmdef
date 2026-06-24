@@ -19,7 +19,6 @@
   "allowUnsafeCode": false,
   "overrideReferences": true,
   "precompiledReferences": [
-    "DOTween.dll",
     "Newtonsoft.Json.dll"
   ],
   "autoReferenced": true,

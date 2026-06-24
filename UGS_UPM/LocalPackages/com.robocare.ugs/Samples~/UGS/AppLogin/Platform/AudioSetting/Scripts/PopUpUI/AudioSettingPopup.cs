@@ -1,17 +1,12 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
-using DG.Tweening;
 using TMPro;
 using UnityEngine.EventSystems;
 using RoboCare.UGS;
 
 public class AudioSettingPopup : PopUpUI
 {
-    private static Tween TweenCanvasGroupAlpha(CanvasGroup canvasGroup, float endAlpha, float duration, Ease ease)
-    {
-        return DOTween.To(() => canvasGroup.alpha, value => canvasGroup.alpha = value, endAlpha, duration).SetEase(ease);
-    }
-
     [Header("Popup Animation")]
     [SerializeField] private CanvasGroup backgroundCanvasGroup;
     [SerializeField] private RectTransform popupContent;
@@ -64,6 +59,10 @@ public class AudioSettingPopup : PopUpUI
     private bool isInitializing = false;
     private bool isPreviewTTSLocked = false;
     private bool isPreviewFXLocked = false;
+    private Coroutine backgroundFadeCoroutine;
+    private Coroutine popupScaleCoroutine;
+    private Coroutine ttsPreviewUnlockCoroutine;
+    private Coroutine fxPreviewUnlockCoroutine;
 
     // 취소 시 복원용 스냅샷
     private float originalMasterVolume = 1.0f;
@@ -138,16 +137,22 @@ public class AudioSettingPopup : PopUpUI
 
         if (backgroundCanvasGroup != null)
         {
-            backgroundCanvasGroup.DOKill();
+            StopBackgroundFade();
             backgroundCanvasGroup.alpha = 0f;
-            TweenCanvasGroupAlpha(backgroundCanvasGroup, backgroundTargetAlpha, backgroundFadeDuration, Ease.OutQuad);
+            if (backgroundFadeDuration <= 0f)
+                backgroundCanvasGroup.alpha = backgroundTargetAlpha;
+            else
+                backgroundFadeCoroutine = StartCoroutine(AnimateCanvasGroupAlpha(backgroundCanvasGroup, backgroundTargetAlpha, backgroundFadeDuration, EaseOutQuad));
         }
 
         if (target != null)
         {
-            target.DOKill();
+            StopPopupScale();
             target.localScale = Vector3.zero;
-            target.DOScale(Vector3.one, showScaleDuration).SetEase(Ease.OutBack);
+            if (showScaleDuration <= 0f)
+                target.localScale = Vector3.one;
+            else
+                popupScaleCoroutine = StartCoroutine(AnimateScale(target, Vector3.one, showScaleDuration, EaseOutBack, null));
         }
     }
 
@@ -157,24 +162,36 @@ public class AudioSettingPopup : PopUpUI
 
         if (backgroundCanvasGroup != null)
         {
-            backgroundCanvasGroup.DOKill();
-            TweenCanvasGroupAlpha(backgroundCanvasGroup, 0f, backgroundFadeDuration, Ease.InQuad);
+            StopBackgroundFade();
+            if (backgroundFadeDuration <= 0f)
+                backgroundCanvasGroup.alpha = 0f;
+            else
+                backgroundFadeCoroutine = StartCoroutine(AnimateCanvasGroupAlpha(backgroundCanvasGroup, 0f, backgroundFadeDuration, EaseInQuad));
         }
 
         if (target != null)
         {
-            target.DOKill();
-            target.DOScale(Vector3.zero, hideScaleDuration).SetEase(Ease.InBack).OnComplete(() =>
+            StopPopupScale();
+            if (hideScaleDuration <= 0f)
             {
-                //GameManager.UI.ClosePopUpUI();
-                //GameManager.UI.OnAudioSettingPopupClosed();
-            });
+                target.localScale = Vector3.zero;
+                OnHideAnimationComplete();
+            }
+            else
+            {
+                popupScaleCoroutine = StartCoroutine(AnimateScale(target, Vector3.zero, hideScaleDuration, EaseInBack, OnHideAnimationComplete));
+            }
         }
         else
         {
-            //GameManager.UI.ClosePopUpUI();
-            //GameManager.UI.OnAudioSettingPopupClosed();
+            OnHideAnimationComplete();
         }
+    }
+
+    private void OnHideAnimationComplete()
+    {
+        //GameManager.UI.ClosePopUpUI();
+        //GameManager.UI.OnAudioSettingPopupClosed();
     }
 
     private void LoadVolumeSettings()
@@ -522,13 +539,14 @@ public class AudioSettingPopup : PopUpUI
         if (btnTestTTS != null)
             btnTestTTS.interactable = false;
 
-        DOVirtual.DelayedCall(PreviewButtonCooldown, () =>
+        if (ttsPreviewUnlockCoroutine != null)
+            StopCoroutine(ttsPreviewUnlockCoroutine);
+
+        ttsPreviewUnlockCoroutine = StartCoroutine(UnlockPreviewButtonAfterDelay(btnTestTTS, () =>
         {
             isPreviewTTSLocked = false;
-
-            if (btnTestTTS != null)
-                btnTestTTS.interactable = true;
-        });
+            ttsPreviewUnlockCoroutine = null;
+        }));
     }
 
     private void LockPreviewFXButton()
@@ -538,13 +556,122 @@ public class AudioSettingPopup : PopUpUI
         if (btnTestFX != null)
             btnTestFX.interactable = false;
 
-        DOVirtual.DelayedCall(PreviewButtonCooldown, () =>
+        if (fxPreviewUnlockCoroutine != null)
+            StopCoroutine(fxPreviewUnlockCoroutine);
+
+        fxPreviewUnlockCoroutine = StartCoroutine(UnlockPreviewButtonAfterDelay(btnTestFX, () =>
         {
             isPreviewFXLocked = false;
+            fxPreviewUnlockCoroutine = null;
+        }));
+    }
 
-            if (btnTestFX != null)
-                btnTestFX.interactable = true;
-        });
+    private IEnumerator AnimateCanvasGroupAlpha(CanvasGroup canvasGroup, float endAlpha, float duration, System.Func<float, float> ease)
+    {
+        if (canvasGroup == null)
+            yield break;
+
+        float startAlpha = canvasGroup.alpha;
+
+        if (duration <= 0f)
+        {
+            canvasGroup.alpha = endAlpha;
+            yield break;
+        }
+
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = Mathf.Clamp01(elapsed / duration);
+            canvasGroup.alpha = Mathf.LerpUnclamped(startAlpha, endAlpha, ease(t));
+            yield return null;
+        }
+
+        canvasGroup.alpha = endAlpha;
+        backgroundFadeCoroutine = null;
+    }
+
+    private IEnumerator AnimateScale(RectTransform target, Vector3 endScale, float duration, System.Func<float, float> ease, System.Action onComplete)
+    {
+        if (target == null)
+            yield break;
+
+        Vector3 startScale = target.localScale;
+
+        if (duration <= 0f)
+        {
+            target.localScale = endScale;
+            popupScaleCoroutine = null;
+            onComplete?.Invoke();
+            yield break;
+        }
+
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = Mathf.Clamp01(elapsed / duration);
+            target.localScale = Vector3.LerpUnclamped(startScale, endScale, ease(t));
+            yield return null;
+        }
+
+        target.localScale = endScale;
+        popupScaleCoroutine = null;
+        onComplete?.Invoke();
+    }
+
+    private IEnumerator UnlockPreviewButtonAfterDelay(Button button, System.Action unlockState)
+    {
+        yield return new WaitForSeconds(PreviewButtonCooldown);
+
+        unlockState?.Invoke();
+
+        if (button != null)
+            button.interactable = true;
+    }
+
+    private void StopBackgroundFade()
+    {
+        if (backgroundFadeCoroutine == null)
+            return;
+
+        StopCoroutine(backgroundFadeCoroutine);
+        backgroundFadeCoroutine = null;
+    }
+
+    private void StopPopupScale()
+    {
+        if (popupScaleCoroutine == null)
+            return;
+
+        StopCoroutine(popupScaleCoroutine);
+        popupScaleCoroutine = null;
+    }
+
+    private static float EaseInQuad(float t)
+    {
+        return t * t;
+    }
+
+    private static float EaseOutQuad(float t)
+    {
+        return 1f - (1f - t) * (1f - t);
+    }
+
+    private static float EaseInBack(float t)
+    {
+        const float c1 = 1.70158f;
+        const float c3 = c1 + 1f;
+        return c3 * t * t * t - c1 * t * t;
+    }
+
+    private static float EaseOutBack(float t)
+    {
+        const float c1 = 1.70158f;
+        const float c3 = c1 + 1f;
+        float shifted = t - 1f;
+        return 1f + c3 * shifted * shifted * shifted + c1 * shifted * shifted;
     }
 
     private void SyncRuntimeVolumeFromCurrentUI()
@@ -604,6 +731,21 @@ public class AudioSettingPopup : PopUpUI
 
     private void OnDestroy()
     {
+        StopBackgroundFade();
+        StopPopupScale();
+
+        if (ttsPreviewUnlockCoroutine != null)
+        {
+            StopCoroutine(ttsPreviewUnlockCoroutine);
+            ttsPreviewUnlockCoroutine = null;
+        }
+
+        if (fxPreviewUnlockCoroutine != null)
+        {
+            StopCoroutine(fxPreviewUnlockCoroutine);
+            fxPreviewUnlockCoroutine = null;
+        }
+
         // 리스너 제거
         if (masterSlider != null) masterSlider.onValueChanged.RemoveListener(OnMasterVolumeChanged);
         if (musicSlider != null) musicSlider.onValueChanged.RemoveListener(OnMusicVolumeChanged);

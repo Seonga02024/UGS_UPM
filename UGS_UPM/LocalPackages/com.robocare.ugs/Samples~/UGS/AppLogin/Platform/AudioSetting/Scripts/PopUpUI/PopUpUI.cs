@@ -14,12 +14,12 @@ namespace RoboCare.UGS
 
         public virtual void ShowPopupUI()
         {
-            DOTweenAnimation.PopupShow(popupBase, popupDuration, ignoreTimeScale: true);
+            UIAnimation.PopupShow(popupBase, popupDuration, ignoreTimeScale: true);
         }
 
         public virtual void HidePopupUI()
         {
-            DOTweenAnimation.PopupHide(popupBase, popupDuration, () =>
+            UIAnimation.PopupHide(popupBase, popupDuration, () =>
             {
                 // GameManager.Resource.Destroy(gameObject);
                 //GameManager.UI.ClosePopUpUI();
